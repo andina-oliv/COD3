@@ -117,6 +117,56 @@
     </div>
   </div>
 
+  <!-- Modal Login PIN Khusus Tim HR -->
+  <div id="hr-login-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 sm:p-7 border border-slate-200 text-center animate-in fade-in zoom-in-95 duration-200">
+      <div class="w-14 h-14 rounded-2xl bg-navy-900 text-sky-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-navy-900/20">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-navy-900">Akses Khusus Tim HR</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-5">Masukkan PIN Keamanan untuk membuka Dashboard Rekapitulasi, Analisis Nilai, dan Catatan Wawancara.</p>
+      
+      <form onsubmit="handleHrLogin(event)" class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">PIN Otorisasi HR</label>
+          <input type="password" id="hr-pin-input" placeholder="Masukkan PIN HR" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-center text-lg tracking-widest font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" autocomplete="off" />
+          <p id="hr-pin-error" class="text-xs text-rose-600 mt-1.5 hidden font-semibold text-center">PIN tidak valid. Silakan coba lagi.</p>
+        </div>
+        <div class="flex gap-2.5 pt-2">
+          <button type="button" onclick="closeHrLoginModal()" class="w-1/2 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Batal</button>
+          <button type="submit" class="w-1/2 py-2.5 text-xs font-bold text-white bg-navy-900 hover:bg-navy-800 rounded-xl shadow-md shadow-navy-950/20 transition">Buka Akses</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Sukses Pengiriman Tes Oleh Kandidat -->
+  <div id="candidate-success-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-extrabold text-navy-900">Jawaban Tes Terkirim!</h3>
+      <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+        Terima kasih, data dan jawaban evaluasi atas nama <strong id="success-cand-name" class="text-navy-900"></strong> telah berhasil disimpan ke database sistem Tim Crewing PT SOSM.
+      </p>
+      <div class="mt-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500 text-left space-y-1">
+        <div class="flex items-center gap-1.5 font-bold text-slate-700">
+          <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Petunjuk Selanjutnya:
+        </div>
+        <p>Silakan konfirmasikan kepada petugas Crewing / Marine HR bahwa Anda telah menyelesaikan seluruh instrumen evaluasi tertulis ini.</p>
+      </div>
+      <button onclick="closeCandidateSuccessModal()" class="mt-6 w-full py-3 bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm rounded-xl transition shadow-md shadow-navy-950/20">
+        Selesai / Mulai Pengisian Baru
+      </button>
+    </div>
+  </div>
+
   <!-- SIDEBAR NAVIGASI (Desktop) & HEADER (Mobile) -->
   <aside class="bg-navy-950 text-white lg:w-72 lg:min-h-screen shrink-0 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-navy-800">
     <div>
@@ -154,9 +204,12 @@
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          <div>
-            <div>Dashboard & Rekap</div>
-            <div class="text-[11px] font-normal opacity-80">Analitik & Hasil Kandidat</div>
+          <div class="flex-1 min-w-0">
+            <div id="nav-dashboard-title" class="flex items-center justify-between">
+              <span class="truncate">Dashboard & Rekap</span>
+              <span id="nav-dashboard-lock" class="text-xs">🔒</span>
+            </div>
+            <div id="nav-dashboard-sub" class="text-[11px] font-normal opacity-80 truncate">Khusus Tim HR</div>
           </div>
         </button>
 
@@ -164,9 +217,9 @@
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <div>
-            <div>Simulasi & Input Tes</div>
-            <div class="text-[11px] font-normal text-slate-400">Live Assessment & Wawancara</div>
+          <div class="flex-1 min-w-0">
+            <div id="nav-assessment-title" class="truncate">Formulir Tes Kru</div>
+            <div class="text-[11px] font-normal text-slate-400 truncate">Tes Situasional Psikologi</div>
           </div>
         </button>
 
@@ -174,11 +227,19 @@
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
-          <div>
-            <div>Kunci & Matriks Red Flag</div>
-            <div class="text-[11px] font-normal text-slate-400">Standar Skoring & Interpretasi</div>
+          <div class="flex-1 min-w-0">
+            <div id="nav-guide-title" class="flex items-center justify-between">
+              <span class="truncate">Kunci & Matriks Red Flag</span>
+              <span id="nav-guide-lock" class="text-xs">🔒</span>
+            </div>
+            <div id="nav-guide-sub" class="text-[11px] font-normal text-slate-400 truncate">Khusus Tim HR</div>
           </div>
         </button>
+
+        <!-- Box Akses Otorisasi HR di Sidebar -->
+        <div id="sidebar-auth-box" class="mt-4 pt-3 border-t border-navy-800/80">
+          <!-- Render dinamis status login HR -->
+        </div>
       </nav>
     </div>
 
@@ -202,13 +263,8 @@
         <h1 id="page-title" class="text-lg sm:text-xl font-bold text-navy-900">Dashboard & Rekap Evaluasi Kru Kapal</h1>
         <p id="page-subtitle" class="text-xs sm:text-sm text-slate-500">Monitoring skor psikologi, profil kompetensi dimensi, dan deteksi Red Flag kandidat pelaut.</p>
       </div>
-      <div class="flex items-center gap-2.5 self-start sm:self-auto">
-        <button onclick="switchTab('assessment')" class="px-3.5 py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs flex items-center gap-2 transition">
-          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Mulai Tes Baru</span>
-        </button>
+      <div id="header-actions" class="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+        <!-- Diisi secara dinamis sesuai status login HR -->
       </div>
     </header>
 
@@ -383,7 +439,7 @@
     <section id="tab-assessment" class="hidden p-4 sm:p-8 max-w-7xl w-full mx-auto">
       
       <!-- Banner Mode Penguji vs Mode Kandidat -->
-      <div class="bg-navy-900 text-white rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+      <div id="assessment-mode-banner" class="bg-navy-900 text-white rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
         <div class="flex items-start sm:items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,11 +448,11 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-sm sm:text-base font-bold">Mode Tampilan Evaluasi</h2>
-            <p class="text-xs text-slate-300">Sembunyikan panel skor & catatan HR saat perangkat digunakan langsung oleh kandidat untuk mengerjakan tes.</p>
+            <h2 id="mode-banner-title" class="text-sm sm:text-base font-bold">Portal Tes Psikologi Kru Kapal</h2>
+            <p id="mode-banner-sub" class="text-xs text-slate-300">Silakan lengkapi data diri dan jawab seluruh 10 pertanyaan situasi di bawah ini.</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 bg-navy-950 p-1.5 rounded-xl border border-navy-800 self-start sm:self-auto">
+        <div id="mode-toggle-group" class="hidden items-center gap-2 bg-navy-950 p-1.5 rounded-xl border border-navy-800 self-start sm:self-auto">
           <button type="button" onclick="setAssessmentMode('examiner')" id="mode-examiner-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition">Mode Penguji / HR</button>
           <button type="button" onclick="setAssessmentMode('candidate')" id="mode-candidate-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">Mode Kandidat (Blind)</button>
         </div>
@@ -433,7 +489,7 @@
                 <label class="block text-xs font-semibold text-slate-700 mb-1.5">Tanggal Tes <span class="text-rose-500">*</span></label>
                 <input type="date" id="cand-date" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
               </div>
-              <div>
+              <div id="examiner-field-group" class="hidden">
                 <label class="block text-xs font-semibold text-slate-700 mb-1.5">Penguji (HR / Crewing Officer)</label>
                 <input type="text" id="cand-examiner" value="Crewing Dept - PT SOSM" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
               </div>
@@ -511,7 +567,7 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
-              <span>Simpan Hasil Evaluasi ke Dashboard</span>
+              <span id="save-btn-text">Kirim Jawaban Tes</span>
             </button>
           </div>
         </div>
@@ -1024,8 +1080,186 @@
     };
 
     // =========================================================================
-    // 2. STATE APLIKASI & DATABASE CLOUD SUPABASE
+    // 2. OTORISASI TIM HR & DATABASE CLOUD SUPABASE
     // =========================================================================
+    const HR_PIN = 'SOSM2026';
+    const HR_AUTH_STORAGE_KEY = 'pt_sosm_hr_authenticated_v1';
+
+    function isHrAuthenticated() {
+      return localStorage.getItem(HR_AUTH_STORAGE_KEY) === 'true';
+    }
+
+    function openHrLoginModal() {
+      const m = document.getElementById('hr-login-modal');
+      const input = document.getElementById('hr-pin-input');
+      const err = document.getElementById('hr-pin-error');
+      if (input) input.value = '';
+      if (err) err.classList.add('hidden');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        setTimeout(() => input && input.focus(), 150);
+      }
+    }
+
+    function closeHrLoginModal() {
+      const m = document.getElementById('hr-login-modal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+    }
+
+    function handleHrLogin(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('hr-pin-input');
+      const err = document.getElementById('hr-pin-error');
+      const val = (input ? input.value : '').trim();
+
+      if (val === HR_PIN) {
+        localStorage.setItem(HR_AUTH_STORAGE_KEY, 'true');
+        if (err) err.classList.add('hidden');
+        closeHrLoginModal();
+        applyHrAuthState();
+        showToast('Login Tim HR berhasil! Akses dashboard & rekapitulasi dibuka.', 'success');
+        switchTab('dashboard');
+      } else {
+        if (err) err.classList.remove('hidden');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }
+    }
+
+    function logoutHr() {
+      showConfirmModal(
+        'Kunci Akses Tim HR',
+        'Kunci kembali akses rekapitulasi ke Portal Ujian Kru (Mode Kandidat)?',
+        () => {
+          localStorage.removeItem(HR_AUTH_STORAGE_KEY);
+          applyHrAuthState();
+          showToast('Mode HR dikunci. Beralih ke Portal Ujian Kru.', 'info');
+          switchTab('assessment');
+        }
+      );
+    }
+
+    function openCandidateSuccessModal(candName) {
+      const m = document.getElementById('candidate-success-modal');
+      const nameEl = document.getElementById('success-cand-name');
+      if (nameEl) nameEl.textContent = candName;
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      }
+    }
+
+    function closeCandidateSuccessModal() {
+      const m = document.getElementById('candidate-success-modal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+    }
+
+    function applyHrAuthState() {
+      const isHr = isHrAuthenticated();
+      const headerActions = document.getElementById('header-actions');
+      const sidebarAuth = document.getElementById('sidebar-auth-box');
+      const navDashLock = document.getElementById('nav-dashboard-lock');
+      const navDashSub = document.getElementById('nav-dashboard-sub');
+      const navGuideLock = document.getElementById('nav-guide-lock');
+      const navGuideSub = document.getElementById('nav-guide-sub');
+      const modeToggle = document.getElementById('mode-toggle-group');
+      const modeTitle = document.getElementById('mode-banner-title');
+      const modeSub = document.getElementById('mode-banner-sub');
+      const examinerField = document.getElementById('examiner-field-group');
+      const saveBtnText = document.getElementById('save-btn-text');
+
+      if (isHr) {
+        // Mode Tim HR Aktif
+        if (navDashLock) navDashLock.textContent = '';
+        if (navDashSub) navDashSub.textContent = 'Analitik & Hasil Kandidat';
+        if (navGuideLock) navGuideLock.textContent = '';
+        if (navGuideSub) navGuideSub.textContent = 'Standar Skoring & Interpretasi';
+        if (modeToggle) modeToggle.classList.remove('hidden');
+        if (modeTitle) modeTitle.textContent = 'Mode Tampilan Evaluasi';
+        if (modeSub) modeSub.textContent = 'Pilih Mode Penguji untuk melihat skor & wawancara lisan secara live.';
+        if (examinerField) examinerField.classList.remove('hidden');
+        if (saveBtnText) saveBtnText.textContent = 'Simpan Hasil Evaluasi ke Dashboard';
+
+        if (headerActions) {
+          headerActions.innerHTML = `
+            <button onclick="switchTab('assessment')" class="px-3.5 py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs flex items-center gap-2 transition">
+              <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Input Tes Baru</span>
+            </button>
+            <span class="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 shadow-xs">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Tim HR Aktif
+            </span>
+            <button onclick="logoutHr()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-semibold border border-slate-200 transition">
+              Kunci / Keluar HR
+            </button>
+          `;
+        }
+
+        if (sidebarAuth) {
+          sidebarAuth.innerHTML = `
+            <div class="p-3 rounded-xl bg-navy-900 border border-navy-800">
+              <div class="flex items-center justify-between text-xs font-bold text-sky-300 mb-1">
+                <span>👑 Otorisasi HR Aktif</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              </div>
+              <p class="text-[11px] text-slate-400">Semua rekap & hasil tes terbuka.</p>
+              <button onclick="logoutHr()" class="mt-2.5 w-full py-1.5 px-2 bg-navy-950 hover:bg-rose-950 hover:text-rose-300 text-slate-300 text-[11px] font-semibold rounded-lg border border-navy-800 transition">
+                Kunci / Keluar HR
+              </button>
+            </div>
+          `;
+        }
+      } else {
+        // Mode Kandidat / Kru (Default)
+        if (navDashLock) navDashLock.textContent = '🔒';
+        if (navDashSub) navDashSub.textContent = 'Khusus Tim HR (Terkunci)';
+        if (navGuideLock) navGuideLock.textContent = '🔒';
+        if (navGuideSub) navGuideSub.textContent = 'Khusus Tim HR (Terkunci)';
+        if (modeToggle) modeToggle.classList.add('hidden');
+        if (modeTitle) modeTitle.textContent = 'Portal Tes Psikologi Kru Kapal';
+        if (modeSub) modeSub.textContent = 'Silakan isi data diri dan jawab seluruh 10 pertanyaan situasi di bawah ini.';
+        if (examinerField) examinerField.classList.add('hidden');
+        if (saveBtnText) saveBtnText.textContent = 'Kirim Jawaban Tes';
+
+        if (headerActions) {
+          headerActions.innerHTML = `
+            <button onclick="openHrLoginModal()" class="px-3.5 py-2 rounded-xl bg-navy-900 hover:bg-navy-800 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition">
+              <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              <span>Login Tim HR</span>
+            </button>
+          `;
+        }
+
+        if (sidebarAuth) {
+          sidebarAuth.innerHTML = `
+            <button onclick="openHrLoginModal()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-sky-900/30 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              <span>Login Otorisasi HR</span>
+            </button>
+          `;
+        }
+
+        // Paksa ke mode ujian tertutup untuk kandidat
+        setAssessmentMode('candidate');
+      }
+    }
+
     const STORAGE_KEY = 'pt_sosm_crew_evaluations_v1';
     const SUPABASE_URL = 'https://idvvbcrffnaemmbanhlo.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_XstBHs8BjHRIbMG_KFP9Bg_jhcmZs7O';
@@ -1364,6 +1598,11 @@
     // 5. NAVIGASI TAB & MODE TAMPILAN
     // =========================================================================
     function switchTab(tabName) {
+      if ((tabName === 'dashboard' || tabName === 'guide') && !isHrAuthenticated()) {
+        openHrLoginModal();
+        return;
+      }
+
       const tabs = ['dashboard', 'assessment', 'guide'];
       const titles = {
         dashboard: {
@@ -1628,8 +1867,13 @@
       candidates.unshift(newRecord);
       saveCandidatesToStorage();
       resetAssessmentForm();
-      showToast(`Hasil tes ${name} (${rank}) berhasil disimpan!`, 'success');
-      switchTab('dashboard');
+
+      if (!isHrAuthenticated()) {
+        openCandidateSuccessModal(`${name} (${rank})`);
+      } else {
+        showToast(`Hasil tes ${name} (${rank}) berhasil disimpan!`, 'success');
+        switchTab('dashboard');
+      }
 
       // Sinkronisasi ke Supabase Cloud
       if (supabaseClient) {
@@ -2168,9 +2412,17 @@
     window.addEventListener('DOMContentLoaded', () => {
       loadCandidates();
       subscribeToRealtime();
+      applyHrAuthState();
+
       document.getElementById('cand-date').value = new Date().toISOString().split('T')[0];
       selectAssessmentCategory('Ratings');
-      renderDashboard();
+
+      if (isHrAuthenticated()) {
+        switchTab('dashboard');
+      } else {
+        switchTab('assessment');
+      }
+
       renderGuideTable('Ratings');
     });
   </script>
