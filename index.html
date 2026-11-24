@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PT SOSM — Dashboard & Sistem Evaluasi Psikologi Kru Kapal</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js untuk visualisasi analitik dimensi & status kelayakan -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              950: '#071224',
+              900: '#0b1d3a',
+              800: '#132c54',
+              700: '#1d4078',
+              600: '#2656a1',
+            },
+            ocean: {
+              500: '#0284c7',
+              600: '#0369a1',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    /* Custom scrollbar untuk tampilan profesional */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e2e8f0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .radio-card:has(input:checked) {
+      border-color: #0284c7;
+      background-color: #f0f9ff;
+      box-shadow: 0 0 0 1px #0284c7;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col lg:flex-row antialiased selection:bg-sky-200 selection:text-navy-900">
+
+  <!-- Toast / Message Box (Pengganti alert/confirm) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Modal Konfirmasi Custom (Pengganti confirm()) -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 id="confirm-title" class="text-lg font-bold text-slate-900">Konfirmasi Tindakan</h3>
+          <p id="confirm-message" class="text-sm text-slate-600 mt-1">Apakah Anda yakin ingin melanjutkan?</p>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="confirm-cancel" type="button" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Batal</button>
+        <button id="confirm-ok" type="button" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Kandidat -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8 border border-slate-200 overflow-hidden">
+      <div class="bg-navy-900 text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-sky-300 font-semibold">Laporan Evaluasi Psikologi & Wawancara</span>
+          <h3 id="detail-modal-name" class="text-xl font-bold mt-0.5">Nama Kandidat</h3>
+        </div>
+        <button onclick="closeDetailModal()" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition" aria-label="Tutup Modal">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="detail-modal-body" class="p-6 max-h-[78vh] overflow-y-auto space-y-6">
+        <!-- Diisi secara dinamis melalui JavaScript -->
+      </div>
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex justify-end">
+        <button onclick="closeDetailModal()" class="px-5 py-2 bg-navy-900 hover:bg-navy-800 text-white text-sm font-semibold rounded-xl transition">Tutup Laporan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR NAVIGASI (Desktop) & HEADER (Mobile) -->
+  <aside class="bg-navy-950 text-white lg:w-72 lg:min-h-screen shrink-0 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-navy-800">
+    <div>
+      <!-- Brand Header -->
+      <div class="p-5 lg:p-6 border-b border-navy-800/80 flex items-center justify-between lg:block">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
+            <!-- Ikon Jangkar / Kemudi Maritim -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m0-18a2 2 0 100 4 2 2 0 000-4zm-7 9H3a9 9 0 0018 0h-2m-7 9c-3.866 0-7-2.686-7-6m7 6c3.866 0 7-2.686 7-6" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold tracking-tight text-lg text-white">PT SOSM</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">CREWING</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-tight mt-0.5">Seven Ocean Ship Management</p>
+          </div>
+        </div>
+        <!-- Mobile Menu Toggle -->
+        <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-xl bg-navy-800 text-slate-200 hover:bg-navy-700" aria-label="Menu Navigasi">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav id="sidebar-nav" class="hidden lg:flex flex-col gap-1.5 p-4">
+        <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Menu Utama Sistem</p>
+        
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold bg-sky-600 text-white shadow-md shadow-sky-900/40 transition text-left">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <div>
+            <div>Dashboard & Rekap</div>
+            <div class="text-[11px] font-normal opacity-80">Analitik & Hasil Kandidat</div>
+          </div>
+        </button>
+
+        <button onclick="switchTab('assessment')" id="nav-assessment" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800/80 hover:text-white transition text-left">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <div>
+            <div>Simulasi & Input Tes</div>
+            <div class="text-[11px] font-normal text-slate-400">Live Assessment & Wawancara</div>
+          </div>
+        </button>
+
+        <button onclick="switchTab('guide')" id="nav-guide" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800/80 hover:text-white transition text-left">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <div>
+            <div>Kunci & Matriks Red Flag</div>
+            <div class="text-[11px] font-normal text-slate-400">Standar Skoring & Interpretasi</div>
+          </div>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Footer Sidebar Info -->
+    <div class="hidden lg:block p-5 border-t border-navy-800/80 bg-navy-900/40">
+      <div class="flex items-center gap-2 text-xs text-sky-300 font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        ISM Code & MLC 2006 Aligned
+      </div>
+      <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+        Instrumen Evaluasi Karakter Psikologis & Keselamatan Pelayaran — Crewing & Marine HR Dept.
+      </p>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 min-w-0 flex flex-col">
+    <!-- Top Header Bar -->
+    <header class="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky top-0 z-30">
+      <div>
+        <h1 id="page-title" class="text-lg sm:text-xl font-bold text-navy-900">Dashboard & Rekap Evaluasi Kru Kapal</h1>
+        <p id="page-subtitle" class="text-xs sm:text-sm text-slate-500">Monitoring skor psikologi, profil kompetensi dimensi, dan deteksi Red Flag kandidat pelaut.</p>
+      </div>
+      <div class="flex items-center gap-2.5 self-start sm:self-auto">
+        <button onclick="switchTab('assessment')" class="px-3.5 py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs flex items-center gap-2 transition">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Mulai Tes Baru</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: DASHBOARD & REKAP EVALUASI                                     -->
+    <!-- ===================================================================== -->
+    <section id="tab-dashboard" class="p-4 sm:p-8 space-y-6 max-w-7xl w-full mx-auto">
+      
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <!-- Total Kandidat -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Kandidat Teruji</p>
+            <h3 id="kpi-total" class="text-3xl font-extrabold text-navy-900 mt-2">0</h3>
+            <p id="kpi-total-sub" class="text-xs text-slate-500 mt-1">0 Ratings • 0 Officers</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-slate-100 text-navy-800 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Direkomendasikan -->
+        <div class="bg-white rounded-2xl p-5 border border-emerald-200 shadow-xs flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Direkomendasikan</p>
+            <h3 id="kpi-pass" class="text-3xl font-extrabold text-emerald-600 mt-2">0</h3>
+            <p class="text-xs text-slate-500 mt-1">Skor 32–40 & 0 Red Flag</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Perlu Pendalaman -->
+        <div class="bg-white rounded-2xl p-5 border border-amber-200 shadow-xs flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">Perlu Pendalaman</p>
+            <h3 id="kpi-review" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3>
+            <p class="text-xs text-slate-500 mt-1">Skor 24–31 & 0 Red Flag Safety</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Tidak Direkomendasikan -->
+        <div class="bg-white rounded-2xl p-5 border border-rose-200 shadow-xs flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-rose-700">Tidak Direkomendasikan</p>
+            <h3 id="kpi-fail" class="text-3xl font-extrabold text-rose-600 mt-2">0</h3>
+            <p class="text-xs text-slate-500 mt-1">Skor &lt;24 atau ≥1 Red Flag</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Radar / Bar Chart Dimensi -->
+        <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-navy-900">Profil Rata-Rata Dimensi Psikologis Kru</h2>
+              <p class="text-xs text-slate-500">Perbandingan capaian skor rata-rata kandidat terhadap batas maksimal tiap dimensi</p>
+            </div>
+            <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start">
+              <button onclick="setDimensionChartType('bar')" id="btn-chart-bar" class="px-3 py-1 text-xs font-semibold rounded-lg bg-white text-navy-900 shadow-xs transition">Bar Chart</button>
+              <button onclick="setDimensionChartType('radar')" id="btn-chart-radar" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-navy-900 transition">Radar Chart</button>
+            </div>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="dimensionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Doughnut Chart Status Kelayakan -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col">
+          <div class="mb-4">
+            <h2 class="text-base font-bold text-navy-900">Distribusi Status Kelayakan</h2>
+            <p class="text-xs text-slate-500">Proporsi hasil seleksi & validasi Red Flag</p>
+          </div>
+          <div class="relative h-56 w-full flex items-center justify-center">
+            <canvas id="statusChart"></canvas>
+          </div>
+          <div id="status-legend" class="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
+            <!-- Diisi dinamis -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Rekapitulasi Kandidat -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div class="p-5 sm:p-6 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-navy-900">Rekapitulasi Hasil Tes & Wawancara Kandidat</h2>
+            <p class="text-xs text-slate-500">Klik baris kandidat untuk melihat rincian skor per dimensi, indikator Red Flag, dan catatan wawancara.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="exportToCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition shadow-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Export CSV</span>
+            </button>
+            <button onclick="confirmResetDummy()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">
+              Reset Data Contoh
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Controls -->
+        <div class="p-4 bg-slate-50/80 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="relative">
+            <input type="text" id="filter-search" oninput="renderDashboard()" placeholder="Cari nama, rank, atau no. buku pelaut..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <div>
+            <select id="filter-category" onchange="renderDashboard()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="ALL">Semua Kategori (Ratings & Officers)</option>
+              <option value="Ratings">Kategori: Ratings</option>
+              <option value="Officers">Kategori: Officers</option>
+            </select>
+          </div>
+          <div>
+            <select id="filter-status" onchange="renderDashboard()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="ALL">Semua Status Kelayakan</option>
+              <option value="DIREKOMENDASIKAN">Direkomendasikan</option>
+              <option value="PERLU PENDALAMAN">Perlu Pendalaman</option>
+              <option value="TIDAK DIREKOMENDASIKAN">Tidak Direkomendasikan</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Responsive Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100/70 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                <th class="py-3.5 px-4">Kandidat & Buku Pelaut</th>
+                <th class="py-3.5 px-4">Rank / Kategori</th>
+                <th class="py-3.5 px-4">Tanggal Tes</th>
+                <th class="py-3.5 px-4 text-center">Skor Total</th>
+                <th class="py-3.5 px-4 text-center">Red Flag</th>
+                <th class="py-3.5 px-4">Status Kelayakan</th>
+                <th class="py-3.5 px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="candidates-table-body" class="divide-y divide-slate-200 text-sm">
+              <!-- Diisi dinamis -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: SIMULASI / INPUT TES KANDIDAT (LIVE ASSESSMENT)                -->
+    <!-- ===================================================================== -->
+    <section id="tab-assessment" class="hidden p-4 sm:p-8 max-w-7xl w-full mx-auto">
+      
+      <!-- Banner Mode Penguji vs Mode Kandidat -->
+      <div class="bg-navy-900 text-white rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm sm:text-base font-bold">Mode Tampilan Evaluasi</h2>
+            <p class="text-xs text-slate-300">Sembunyikan panel skor & catatan HR saat perangkat digunakan langsung oleh kandidat untuk mengerjakan tes.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 bg-navy-950 p-1.5 rounded-xl border border-navy-800 self-start sm:self-auto">
+          <button type="button" onclick="setAssessmentMode('examiner')" id="mode-examiner-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition">Mode Penguji / HR</button>
+          <button type="button" onclick="setAssessmentMode('candidate')" id="mode-candidate-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">Mode Kandidat (Blind)</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Kolom Kiri: Form Identitas, 10 Soal & Wawancara -->
+        <div id="assessment-form-column" class="lg:col-span-8 space-y-6">
+          
+          <!-- Card 1: Identitas Kandidat -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-5">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600">Langkah 1</span>
+                <h3 class="text-base font-bold text-navy-900">Identitas Kandidat & Kategori Jabatan</h3>
+              </div>
+              <button type="button" onclick="resetAssessmentForm()" class="text-xs font-semibold text-slate-500 hover:text-rose-600 transition">Reset Formulir</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Nama Lengkap (Sesuai KTP/Paspor) <span class="text-rose-500">*</span></label>
+                <input type="text" id="cand-name" placeholder="Contoh: Budi Santoso" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Nomor Buku Pelaut (Seaman Book) <span class="text-rose-500">*</span></label>
+                <input type="text" id="cand-seaman" placeholder="Contoh: E 123456" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Posisi / Rank yang Dilamar <span class="text-rose-500">*</span></label>
+                <input type="text" id="cand-rank" placeholder="Contoh: Able Seaman (AB) / Chief Officer" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Tanggal Tes <span class="text-rose-500">*</span></label>
+                <input type="date" id="cand-date" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Penguji (HR / Crewing Officer)</label>
+                <input type="text" id="cand-examiner" value="Crewing Dept - PT SOSM" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Kategori Paket Soal <span class="text-rose-500">*</span></label>
+                <div class="grid grid-cols-2 gap-2.5">
+                  <button type="button" onclick="selectAssessmentCategory('Ratings')" id="cat-btn-ratings" class="py-2.5 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-navy-900 font-bold text-xs sm:text-sm text-center transition">
+                    Ratings (Deck/Eng)
+                  </button>
+                  <button type="button" onclick="selectAssessmentCategory('Officers')" id="cat-btn-officers" class="py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 font-semibold text-xs sm:text-sm text-center transition">
+                    Officers (Perwira)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Daftar 10 Pertanyaan Situasional -->
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4 mb-5">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600">Langkah 2 — Instrumen Psikologi Situasional</span>
+                <h3 id="questions-section-title" class="text-base font-bold text-navy-900">Paket Soal Kategori: Ratings (10 Pertanyaan)</h3>
+              </div>
+              <span id="answered-counter" class="text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 self-start sm:self-auto">
+                Terjawab: 0 / 10
+              </span>
+            </div>
+
+            <div id="questions-container" class="space-y-6">
+              <!-- 10 Soal dirender dinamis di sini -->
+            </div>
+          </div>
+
+          <!-- Card 3: Wawancara Validasi Lisan (Khusus Penguji / HR) -->
+          <div id="oral-interview-card" class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs">
+            <div class="border-b border-slate-100 pb-4 mb-5">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600">Langkah 3 — Diisi oleh Crewing / User Interviewer</span>
+              <h3 class="text-base font-bold text-navy-900">Catatan Wawancara Validasi Lisan (3 Pertanyaan Kunci)</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Digunakan untuk memverifikasi konsistensi jawaban tertulis, terutama bagi kandidat dengan skor 24–31 (Perlu Pendalaman).</p>
+            </div>
+
+            <div class="space-y-4">
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <label class="block text-xs font-bold text-navy-900 mb-1">1. Kejujuran & Manajemen Stres</label>
+                <p class="text-xs text-slate-600 mb-2">"Ceritakan pengalaman cuaca buruk atau kerusakan teknis di laut & langkah konkret yang Anda lakukan."</p>
+                <textarea id="oral-q1" rows="2" placeholder="Catat ringkasan jawaban & bahasa tubuh kandidat..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+              </div>
+
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <label class="block text-xs font-bold text-navy-900 mb-1">2. Toleransi Ruang Hidup & Adaptasi Multikultural</label>
+                <p class="text-xs text-slate-600 mb-2">"Kebiasaan buruk rekan sekamar/rekan kerja apa yang paling sulit ditoleransi dan bagaimana menyikapinya?"</p>
+                <textarea id="oral-q2" rows="2" placeholder="Catat ringkasan jawaban kandidat..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+              </div>
+
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <label class="block text-xs font-bold text-navy-900 mb-1">3. Komitmen Kontrak & Loyalitas</label>
+                <p class="text-xs text-slate-600 mb-2">"Jika di tengah kontrak ada tawaran gaji lebih tinggi dari perusahaan lain, apa keputusan Anda?"</p>
+                <textarea id="oral-q3" rows="2" placeholder="Catat ringkasan jawaban kandidat..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+              </div>
+
+              <div class="p-4 rounded-xl bg-rose-50/70 border border-rose-200 flex items-start gap-3">
+                <input type="checkbox" id="oral-redflag" onchange="updateLivePreview()" class="mt-1 w-4 h-4 text-rose-600 rounded border-rose-300 focus:ring-rose-500" />
+                <label for="oral-redflag" class="text-xs text-rose-900 cursor-pointer">
+                  <span class="font-bold block">Tandai Red Flag Wawancara Lisan (Override Tidak Direkomendasikan)</span>
+                  Centang kotak ini jika selama wawancara lisan kandidat menunjukkan indikasi berbohong, temperamental, atau berniat melakukan <em>early sign-off</em> sepihak.
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tombol Submit Utama -->
+          <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+            <button type="button" onclick="saveCandidateEvaluation()" class="w-full sm:w-auto px-6 py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Simpan Hasil Evaluasi ke Dashboard</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Panel Live Score Preview (Sticky) -->
+        <div id="live-preview-column" class="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600">Real-Time Scoring</span>
+                <h3 class="text-base font-bold text-navy-900">Live Score & Red Flag Preview</h3>
+              </div>
+              <span id="preview-cat-badge" class="px-2.5 py-1 rounded-lg bg-navy-900 text-white text-xs font-bold">Ratings</span>
+            </div>
+
+            <!-- Skor Utama -->
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 text-center mb-4">
+              <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Skor Psikologi</div>
+              <div class="flex items-baseline justify-center gap-1.5 mt-1">
+                <span id="preview-total-score" class="text-4xl font-extrabold text-navy-900">0</span>
+                <span class="text-base font-bold text-slate-400">/ 40</span>
+              </div>
+              <div id="preview-percentage" class="text-xs font-semibold text-sky-600 mt-1">0% (0 dari 10 soal terjawab)</div>
+            </div>
+
+            <!-- Status Rekomendasi Otomatis -->
+            <div id="preview-status-box" class="p-3.5 rounded-xl bg-slate-100 border border-slate-200 mb-4">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Status Rekomendasi Sementara</div>
+              <div id="preview-status-text" class="text-sm font-extrabold text-slate-700 mt-0.5">BELUM LENGKAP</div>
+              <p id="preview-status-desc" class="text-xs text-slate-600 mt-1 leading-relaxed">Lengkapi seluruh 10 pertanyaan untuk melihat keputusan akhir sistem.</p>
+            </div>
+
+            <!-- Rincian 4 Dimensi -->
+            <div class="space-y-3 mb-5">
+              <div class="text-xs font-bold text-navy-900 uppercase tracking-wider">Skor Per Dimensi</div>
+              
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span id="dim1-label" class="font-medium text-slate-700">1. Safety & Prosedur</span>
+                  <span id="dim1-val" class="font-bold text-navy-900">0 / 12</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="dim1-bar" class="h-full bg-sky-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="font-medium text-slate-700">2. Ketahanan Mental</span>
+                  <span id="dim2-val" class="font-bold text-navy-900">0 / 8</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="dim2-bar" class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span id="dim3-label" class="font-medium text-slate-700">3. Kerja Sama & Budaya</span>
+                  <span id="dim3-val" class="font-bold text-navy-900">0 / 12</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="dim3-bar" class="h-full bg-teal-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span id="dim4-label" class="font-medium text-slate-700">4. Integritas & Komitmen</span>
+                  <span id="dim4-val" class="font-bold text-navy-900">0 / 8</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="dim4-bar" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Daftar Deteksi Red Flag -->
+            <div class="border-t border-slate-100 pt-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-rose-700 uppercase tracking-wider">Deteksi Red Flag (Bobot 1)</span>
+                <span id="preview-rf-count" class="px-2 py-0.5 text-xs font-extrabold rounded-full bg-slate-100 text-slate-600">0</span>
+              </div>
+              <div id="preview-rf-list" class="text-xs text-slate-500 space-y-1.5">
+                <p class="italic">Tidak ada indikator Red Flag terdeteksi.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: KUNCI JAWABAN, MATRIKS RED FLAG & PANDUAN INTERPRETASI         -->
+    <!-- ===================================================================== -->
+    <section id="tab-guide" class="hidden p-4 sm:p-8 space-y-6 max-w-7xl w-full mx-auto">
+      
+      <!-- Panduan Aturan Kelulusan & Red Flag Rule -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+        <div class="border-b border-slate-100 pb-4 mb-5">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600">Standar Penilaian PT SOSM</span>
+          <h2 class="text-lg font-bold text-navy-900">Aturan Skoring Bertingkat & Sistem Eliminasi Red Flag</h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">Setiap soal memiliki 4 opsi jawaban dengan bobot: <strong>4 Poin</strong> (Perilaku Ideal/Prosedural), <strong>2 Poin</strong> (Moderat/Kurang Optimal), dan <strong>1 Poin</strong> (<em>Red Flag</em> / Risiko Keselamatan & Disiplin).</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Tier 1 -->
+          <div class="rounded-2xl p-5 bg-emerald-50/70 border border-emerald-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold">DIREKOMENDASIKAN</span>
+              <span class="text-sm font-extrabold text-emerald-800">32 – 40 Poin (≥80%)</span>
+            </div>
+            <p class="text-xs font-semibold text-emerald-900 mt-2">Syarat Mutlak: 0 Red Flag (Tidak ada satu pun jawaban bernilai 1 poin).</p>
+            <p class="text-xs text-emerald-800/90 mt-2 leading-relaxed">
+              <strong>Tindak Lanjut:</strong> Kandidat dinyatakan lolos tahap psikologi & karakter. Dapat langsung dilanjutkan ke tahap wawancara teknis user / principal.
+            </p>
+          </div>
+
+          <!-- Tier 2 -->
+          <div class="rounded-2xl p-5 bg-amber-50/70 border border-amber-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-1 rounded-lg bg-amber-500 text-white text-xs font-bold">PERLU PENDALAMAN</span>
+              <span class="text-sm font-extrabold text-amber-800">24 – 31 Poin (60–79%)</span>
+            </div>
+            <p class="text-xs font-semibold text-amber-900 mt-2">Syarat Mutlak: 0 Red Flag pada dimensi Safety (Soal No. 1–3).</p>
+            <p class="text-xs text-amber-800/90 mt-2 leading-relaxed">
+              <strong>Tindak Lanjut:</strong> Wajib dilakukan pendalaman melalui 3 pertanyaan wawancara validasi lisan oleh Crewing/Marine Superintendent sebelum keputusan akhir.
+            </p>
+          </div>
+
+          <!-- Tier 3 -->
+          <div class="rounded-2xl p-5 bg-rose-50/70 border border-rose-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-xs font-bold">TIDAK DIREKOMENDASIKAN</span>
+              <span class="text-sm font-extrabold text-rose-800">&lt;24 Poin atau ≥1 Red Flag</span>
+            </div>
+            <p class="text-xs font-semibold text-rose-900 mt-2">Pemicu Otomatis: Skor &lt;60% ATAU terdapat ≥1 jawaban bernilai 1 poin.</p>
+            <p class="text-xs text-rose-800/90 mt-2 leading-relaxed">
+              <strong>Tindak Lanjut:</strong> Tolak kandidat demi mencegah risiko kecelakaan kerja (mengabaikan APD/ISM Code), konflik horizontal di kapal, atau niat <em>early sign-off</em>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabel Kunci Jawaban Lengkap (Switch Ratings / Officers) -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div class="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-navy-900">Matriks Kunci Jawaban, Bobot & Analisis Psikologis</h3>
+            <p class="text-xs text-slate-500">Referensi lengkap pembobotan setiap butir soal untuk tim HR & Crewing.</p>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl self-start">
+            <button onclick="renderGuideTable('Ratings')" id="guide-tab-ratings" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-navy-900 text-white shadow-xs transition">Paket Ratings</button>
+            <button onclick="renderGuideTable('Officers')" id="guide-tab-officers" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-navy-900 transition">Paket Officers</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                <th class="py-3.5 px-4 w-12 text-center">No</th>
+                <th class="py-3.5 px-4 w-44">Dimensi</th>
+                <th class="py-3.5 px-4">Situasi & Kunci Ideal (4 Poin)</th>
+                <th class="py-3.5 px-4 w-40 text-center">Bobot (A / B / C / D)</th>
+                <th class="py-3.5 px-4 w-36 text-center">Red Flag (1 Poin)</th>
+                <th class="py-3.5 px-4">Analisis Psikologis & Perilaku</th>
+              </tr>
+            </thead>
+            <tbody id="guide-table-body" class="divide-y divide-slate-200 text-xs sm:text-sm">
+              <!-- Diisi dinamis -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. DATABASE INSTRUMEN TES (100% SESUAI EXCEL PT SOSM)
+    // =========================================================================
+    const INSTRUMENT_DATA = {
+      Ratings: [
+        {
+          no: 1,
+          dimension: 'Safety & Prosedur',
+          dimKey: 'dim1',
+          question: 'Saat kapal bersiap sandar (berthing) dan jadwal sangat ketat, Bosun meminta Anda bekerja di ketinggian/ruang terbatas tanpa menunggu Permit to Work atau safety harness lengkap agar cepat selesai. Apa tindakan Anda?',
+          options: {
+            A: 'Langsung mengerjakannya dengan ekstra hati-hati agar tidak mengecewakan atasan.',
+            B: 'Menolak dengan tegas di depan kru lain dan memarahinya karena melanggar aturan keselamatan.',
+            C: 'Mengingatkan secara sopan mengenai prosedur keselamatan (Stop Work Authority), lalu menyiapkan APD sebelum bekerja.',
+            D: 'Mengerjakannya sambil menggerutu, lalu melaporkannya ke kantor setelah turun kapal.'
+          },
+          weights: { A: 1, B: 2, C: 4, D: 1 },
+          ideal: 'C',
+          redFlags: ['A', 'D'],
+          analysis: 'Menguji keberanian menerapkan Stop Work Authority secara asertif dan sopan tanpa memicu konflik terbuka, serta kepatuhan mutlak pada APD & Permit to Work.'
+        },
+        {
+          no: 2,
+          dimension: 'Safety & Prosedur',
+          dimKey: 'dim1',
+          question: 'Saat tugas jaga malam (watchkeeping), situasi laut tenang dan rasa kantuk menyerang, sementara rekan jaga Anda sudah tertidur di kursi. Apa yang Anda lakukan?',
+          options: {
+            A: 'Ikut memejamkan mata 10–15 menit karena kondisi aman dan tidak ada aktivitas.',
+            B: 'Tetap terjaga dengan membasuh muka, mengecek area/instrumen berkala, dan membangunkan rekan jaga Anda.',
+            C: 'Membiarkan rekan tidur agar ia tidak marah, sementara Anda bermain ponsel agar tidak mengantuk.',
+            D: 'Langsung melapor ke Master/Chief Engineer saat itu juga tanpa membangunkan rekan terlebih dahulu.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 2 },
+          ideal: 'B',
+          redFlags: ['A', 'C'],
+          analysis: 'Mengukur kewaspadaan saat dinas jaga (watchkeeping discipline) dan tanggung jawab kolektif menjaga keselamatan navigasi/mesin.'
+        },
+        {
+          no: 3,
+          dimension: 'Safety & Prosedur',
+          dimKey: 'dim1',
+          question: 'Anda melihat tumpahan oli/minyak di dek atau kamar mesin yang berpotensi membuat kru terpeleset, namun area tersebut bukan bagian tugas kebersihan Anda hari itu. Sikap Anda?',
+          options: {
+            A: 'Membiarkannya karena itu tanggung jawab shift atau kru lain.',
+            B: 'Segera memasang tanda peringatan/membersihkannya dan melaporkannya ke perwira jaga.',
+            C: 'Menunggu sampai ada orang lain yang terpeleset baru membersihkannya.',
+            D: 'Memotretnya untuk dijadikan bahan komplain di grup kru.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'C', 'D'],
+          analysis: 'Menilai inisiatif pencegahan kecelakaan (proactive safety culture / housekeeping) di luar batas deskripsi tugas sempit.'
+        },
+        {
+          no: 4,
+          dimension: 'Ketahanan Mental',
+          dimKey: 'dim2',
+          question: 'Anda sudah 6 bulan di kapal, sinyal internet sering putus sehingga komunikasi dengan keluarga terhambat, dan ada masalah pribadi di rumah. Bagaimana dampaknya pada kerja Anda?',
+          options: {
+            A: 'Kehilangan fokus, sering melamun saat bekerja, dan mudah tersinggung jika ditegur.',
+            B: 'Mengurung diri di kabin setiap selesai kerja dan menolak berinteraksi di messroom.',
+            C: 'Mengakui rasa rindu/stres secara wajar, mengalihkan ke olahraga/rutinitas positif, dan tetap profesional saat bertugas.',
+            D: 'Menuntut sign-off mendadak di pelabuhan terdekat meski kontrak belum selesai.'
+          },
+          weights: { A: 2, B: 1, C: 4, D: 1 },
+          ideal: 'C',
+          redFlags: ['B', 'D'],
+          analysis: 'Mengukur stabilitas emosi, mekanisme koping stres (coping strategy) akibat isolasi laut, dan ketahanan menyelesaikan kontrak.'
+        },
+        {
+          no: 5,
+          dimension: 'Ketahanan Mental',
+          dimKey: 'dim2',
+          question: 'Rute kapal berubah mendadak karena cuaca buruk sehingga jadwal kepulangan (sign-off) Anda tertunda 3 minggu dari tanggal kontrak awal. Reaksi Anda?',
+          options: {
+            A: 'Melakukan mogok kerja atau memperlambat pekerjaan sebagai bentuk protes.',
+            B: 'Merasa lelah secara mental, namun tetap bekerja sesuai standar sambil berkoordinasi terkait jadwal relief berikutnya.',
+            C: 'Marah-marah di messroom dan menghasut kru lain ikut memprotes perwira.',
+            D: 'Bekerja asal-asalan karena merasa waktu tambahan tidak sebanding dengan rasa lelah.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'C', 'D'],
+          analysis: 'Menilai resiliensi dan kedewasaan menghadapi ketidakpastian operasional pelayaran tanpa menurunkan standar kerja atau memprovokasi kru.'
+        },
+        {
+          no: 6,
+          dimension: 'Kerja Sama & Budaya',
+          dimKey: 'dim3',
+          question: 'Anda bekerja di bawah perwira/Bosun dari negara berbeda yang gaya bicaranya sangat keras dan cepat sehingga terdengar seperti memarahi setiap memberi instruksi. Sikap Anda?',
+          options: {
+            A: 'Membalas dengan nada bicara yang sama kerasnya agar tidak terlihat lemah.',
+            B: 'Memahami itu gaya komunikasi budaya mereka, fokus pada inti instruksi, dan mengonfirmasi ulang jika kurang jelas.',
+            C: 'Merasa sakit hati dan menganggap atasan tersebut memiliki dendam pribadi.',
+            D: 'Menghindarinya sebisa mungkin dan meminta rekan lain menjadi perantara.'
+          },
+          weights: { A: 1, B: 4, C: 2, D: 2 },
+          ideal: 'B',
+          redFlags: ['A'],
+          analysis: 'Mengukur kecerdasan lintas budaya (cross-cultural adaptability) dan kemampuan menahan ego dalam lingkungan kerja multinasional.'
+        },
+        {
+          no: 7,
+          dimension: 'Kerja Sama & Budaya',
+          dimKey: 'dim3',
+          question: 'Terjadi perselisihan paham antara dua rekan kru di messroom terkait pembagian tugas harian. Posisi Anda kebetulan ada di sana. Apa yang Anda lakukan?',
+          options: {
+            A: 'Ikut memanasi suasana dengan membela salah satu pihak yang paling dekat.',
+            B: 'Merekam pertengkaran tersebut diam-diam untuk disebarkan ke grup WhatsApp.',
+            C: 'Menjadi penengah yang netral, meredakan ketegangan, dan mengingatkan bahwa semua berada di satu kapal.',
+            D: 'Langsung pergi meninggalkan ruangan tanpa peduli apa yang terjadi.'
+          },
+          weights: { A: 1, B: 1, C: 4, D: 2 },
+          ideal: 'C',
+          redFlags: ['A', 'B'],
+          analysis: 'Menilai peran sebagai penjaga harmoni sosial (social cohesion) di ruang hidup terbatas agar konflik tidak meluas.'
+        },
+        {
+          no: 8,
+          dimension: 'Kerja Sama & Budaya',
+          dimKey: 'dim3',
+          question: 'Rekan sekamar Anda memiliki kebiasaan menyetel musik atau menelepon dengan suara keras saat jam istirahat Anda setelah jaga malam. Apa tindakan Anda?',
+          options: {
+            A: 'Menegurnya dengan baik-baik di waktu yang tepat dan menyepakati aturan jam istirahat bersama.',
+            B: 'Langsung memarahinya dengan emosi atau membanting pintu kabin.',
+            C: 'Membalasnya dengan menyetel suara keras saat ia sedang tidur.',
+            D: 'Mendiamkannya berhari-hari lalu melaporkannya ke Master untuk urusan sepele ini.'
+          },
+          weights: { A: 4, B: 1, C: 1, D: 2 },
+          ideal: 'A',
+          redFlags: ['B', 'C'],
+          analysis: 'Menguji komunikasi interpersonal yang sehat dan toleransi hidup berdampingan di kabin kapal.'
+        },
+        {
+          no: 9,
+          dimension: 'Integritas & Komitmen',
+          dimKey: 'dim4',
+          question: 'Di tengah kontrak pelayaran, Anda mendapat tawaran gaji sedikit lebih tinggi dari perusahaan lain untuk bergabung bulan depan. Apa keputusan Anda?',
+          options: {
+            A: 'Mencari-cari alasan sakit atau masalah keluarga agar bisa early sign-off.',
+            B: 'Menolak tawaran tersebut secara sopan dan menyelesaikan kontrak hingga sign-off resmi & serah terima reliever.',
+            C: 'Menerima tawaran tersebut dan langsung meminta turun di pelabuhan berikutnya tanpa memikirkan pengganti.',
+            D: 'Bekerja malas-malasan agar perusahaan memulangkan Anda lebih cepat.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'C', 'D'],
+          analysis: 'Mendeteksi potensi pelanggaran kontrak (desertion / fake medical sign-off) yang merugikan operasional kapal.'
+        },
+        {
+          no: 10,
+          dimension: 'Integritas & Komitmen',
+          dimKey: 'dim4',
+          question: 'Anda tidak sengaja merusak salah satu peralatan kerja/perkakas kapal saat bertugas dan tidak ada orang lain yang melihatnya. Apa yang Anda lakukan?',
+          options: {
+            A: 'Menyembunyikan alat tersebut dan pura-pura tidak tahu saat ditanya.',
+            B: 'Meletakkannya di area kerja rekan lain agar terlihat seperti kesalahannya.',
+            C: 'Segera melapor kepada Bosun/Perwira jaga dengan jujur agar alat bisa segera diperbaiki/diganti demi kelancaran operasi.',
+            D: 'Membiarkannya di tempat semula tanpa melapor sampai ditemukan kru lain.'
+          },
+          weights: { A: 1, B: 1, C: 4, D: 2 },
+          ideal: 'C',
+          redFlags: ['A', 'B'],
+          analysis: 'Mengukur kejujuran (just culture) dan akuntabilitas pribadi terhadap kesiapan peralatan operasional kapal.'
+        }
+      ],
+      Officers: [
+        {
+          no: 1,
+          dimension: 'Safety & Komando',
+          dimKey: 'dim1',
+          question: 'Charterer/Owner mendesak kapal segera berangkat (ETD) padahal cuaca memburuk atau ada temuan kritis pada peralatan navigasi/mesin utama. Sebagai Perwira, keputusan Anda?',
+          options: {
+            A: 'Tetap berangkat demi menjaga hubungan baik dengan Charterer sambil berharap cuaca membaik.',
+            B: 'Menunda keberangkatan secara profesional, mendokumentasikan alasan teknis/keselamatan, dan melapor ke Master/DPA sesuai ISM Code.',
+            C: 'Memerintahkan anak buah bekerja lembur tanpa istirahat agar perbaikan selesai secepatnya meski melanggar jam kerja MLC.',
+            D: 'Menunggu perintah langsung dari kantor tanpa memberikan analisis risiko teknis dari atas kapal.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 2 },
+          ideal: 'B',
+          redFlags: ['A', 'C'],
+          analysis: 'Menguji ketegasan perwira dalam menegakkan ISM Code dan keselamatan navigasi di atas tekanan komersial Charterer.'
+        },
+        {
+          no: 2,
+          dimension: 'Safety & Komando',
+          dimKey: 'dim1',
+          question: 'Saat inspeksi internal atau latihan darurat (drill), Anda menemukan beberapa ratings melakukan prosedur secara asal-asalan karena menganggapnya hanya rutinitas formalitas. Sikap Anda?',
+          options: {
+            A: 'Membiarkannya selama dokumen checklist terisi lengkap untuk kebutuhan audit.',
+            B: 'Memarahi seluruh kru di depan umum dan mengancam akan memotong lembur/bonus mereka.',
+            C: 'Menghentikan latihan sejenak, menjelaskan risiko nyata di laut secara objektif, dan melatih ulang langkah yang benar hingga paham.',
+            D: 'Mengerjakannya sendiri agar laporan ke kantor terlihat sempurna.'
+          },
+          weights: { A: 1, B: 2, C: 4, D: 1 },
+          ideal: 'C',
+          redFlags: ['A', 'D'],
+          analysis: 'Menilai komitmen membangun budaya keselamatan yang substantif (bukan sekadar paperwork) melalui pembinaan kru.'
+        },
+        {
+          no: 3,
+          dimension: 'Safety & Komando',
+          dimKey: 'dim1',
+          question: 'Anda melihat perwira senior lain (atau Chief Officer/2nd Engineer) melakukan jalan pintas yang melanggar prosedur keselamatan saat operasi bongkar muat/bunkering. Tindakan Anda?',
+          options: {
+            A: 'Diam saja karena menghormati senioritas dan pangkatnya.',
+            B: 'Mengingatkannya secara pribadi dengan bahasa yang profesional dan berbasis risiko operasional.',
+            C: 'Membicarakannya di belakang layar bersama para ratings.',
+            D: 'Langsung mengirim email pengaduan ke kantor pusat tanpa berdiskusi dengannya terlebih dahulu.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 2 },
+          ideal: 'B',
+          redFlags: ['A', 'C'],
+          analysis: 'Mengukur penerapan Bridge/Engine Resource Management (BRM/ERM) dalam menantang keputusan tidak aman tanpa merusak hierarki.'
+        },
+        {
+          no: 4,
+          dimension: 'Ketahanan Mental',
+          dimKey: 'dim2',
+          question: 'Terjadi kondisi darurat di tengah malam (blackout mesin utama atau cuaca ekstrem) saat Anda bertugas jaga. Kepanikan mulai terlihat di wajah kru junior. Respons pertama Anda?',
+          options: {
+            A: 'Ikut berteriak memberi banyak perintah sekaligus agar kru bergerak cepat.',
+            B: 'Menarik napas, menjaga nada suara tetap tenang dan tegas, membagi tugas spesifik sesuai muster list, dan memverifikasi setiap tindakan.',
+            C: 'Mengerjakan seluruh panel kontrol sendirian karena tidak percaya pada kemampuan kru jaga.',
+            D: 'Menunggu perwira lebih senior datang mengambil alih sebelum mengambil tindakan pengamanan awal.'
+          },
+          weights: { A: 1, B: 4, C: 2, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'D'],
+          analysis: 'Menilai ketenangan komando di bawah tekanan krisis (emergency leadership) dan pendelegasian terstruktur.'
+        },
+        {
+          no: 5,
+          dimension: 'Ketahanan Mental',
+          dimKey: 'dim2',
+          question: 'Beban administrasi (PMS, laporan harian, persiapan audit PSC/SIRE) menumpuk bersamaan dengan jadwal pelabuhan yang padat sehingga waktu istirahat Anda berkurang. Bagaimana Anda mengelolanya?',
+          options: {
+            A: 'Mengisi logbook/checklist secara fiktif (copy-paste) agar terlihat patuh pada jam istirahat MLC.',
+            B: 'Memetakan prioritas tugas kritis, mendelegasikan tugas rutin yang sesuai kepada kru/junior officer, dan mengomunikasikan beban kerja ke Master.',
+            C: 'Menunda semua pekerjaan administratif hingga kapal berlayar jauh meski melewati tenggat waktu.',
+            D: 'Melampiaskan kelelahan dengan bersikap kasar kepada anak buah saat briefing pagi.'
+          },
+          weights: { A: 1, B: 4, C: 2, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'D'],
+          analysis: 'Menguji manajemen beban kerja (workload management), kejujuran pencatatan MLC, dan regulasi emosi saat kelelahan.'
+        },
+        {
+          no: 6,
+          dimension: 'Kepemimpinan & Tim',
+          dimKey: 'dim3',
+          question: 'Dua anggota departemen Anda (misalnya AB dan Oiler, atau dua ratings) terlibat konflik personal yang mulai mengganggu koordinasi kerja di dek/kamar mesin. Langkah Anda?',
+          options: {
+            A: 'Memihak kru yang memiliki masa kerja lebih lama atau berasal dari daerah yang sama dengan Anda.',
+            B: 'Memanggil keduanya secara terpisah lalu bersama-sama untuk mendengar fakta secara objektif, menetapkan batasan profesional, dan memantau kerja sama mereka.',
+            C: 'Membiarkan mereka menyelesaikannya sendiri selama pekerjaan harian masih selesai.',
+            D: 'Langsung merekomendasikan pemulangan (sign-off) keduanya ke perusahaan tanpa pembinaan.'
+          },
+          weights: { A: 1, B: 4, C: 2, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'D'],
+          analysis: 'Menilai objektivitas kepemimpinan, keadilan tanpa favoritisme suku/senioritas, dan keterampilan resolusi konflik.'
+        },
+        {
+          no: 7,
+          dimension: 'Kepemimpinan & Tim',
+          dimKey: 'dim3',
+          question: 'Anda ditempatkan di kapal dengan kru multinasional di mana sebagian ratings memiliki kemampuan bahasa Inggris terbatas sehingga sering terjadi miskomunikasi instruksi. Solusi Anda?',
+          options: {
+            A: 'Mengeluh kepada perusahaan dan meminta seluruh kru diganti.',
+            B: 'Menggunakan bahasa Inggris maritim standar (SMCP) yang sederhana, disertai demonstrasi visual dan meminta kru mengulang instruksi (closed-loop communication).',
+            C: 'Hanya memberikan pekerjaan kepada kru yang fasih berbahasa Inggris dan mengabaikan sisanya.',
+            D: 'Berbicara lebih keras dengan nada kesal setiap kali kru tidak langsung paham.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'C', 'D'],
+          analysis: 'Mengukur efektivitas komunikasi maritim (IMO SMCP & closed-loop communication) dalam tim multikultural.'
+        },
+        {
+          no: 8,
+          dimension: 'Kepemimpinan & Tim',
+          dimKey: 'dim3',
+          question: 'Seorang kru junior melakukan kesalahan teknis minor yang tidak menimbulkan kerusakan fatal, namun ia terlihat sangat takut dan tertekan. Bagaimana pendekatan Anda?',
+          options: {
+            A: 'Menjadikannya bahan evaluasi bersama secara konstruktif, melatih cara yang benar, dan memastikan ia tidak takut melapor jika ada masalah di kemudian hari.',
+            B: 'Mempermalukannya di depan kru lain agar menjadi pelajaran bagi semua orang.',
+            C: 'Pura-pura tidak tahu agar ia tidak sakit hati.',
+            D: 'Mencatatnya sebagai pelanggaran berat di laporan penilaian akhir kontrak.'
+          },
+          weights: { A: 4, B: 1, C: 1, D: 2 },
+          ideal: 'A',
+          redFlags: ['B', 'C'],
+          analysis: 'Menilai gaya kepemimpinan pembina (coaching leadership) yang mendorong budaya pelaporan terbuka tanpa rasa takut.'
+        },
+        {
+          no: 9,
+          dimension: 'Integritas & Tata Kelola',
+          dimKey: 'dim4',
+          question: 'Saat kapal sandar, pihak eksternal (supplier/surveyor/agen lokal) menawarkan "uang terima kasih" atau bingkisan pribadi agar Anda mempercepat tanda tangan dokumen penerimaan barang yang jumlahnya kurang. Sikap Anda?',
+          options: {
+            A: 'Menerimanya selama kekurangan barang tidak terlalu mencolok.',
+            B: 'Menolak secara tegas sesuai kebijakan anti-suap perusahaan, mencatat selisih aktual pada dokumen, dan melaporkannya ke Master/kantor.',
+            C: 'Menerima bingkisan tersebut namun tetap mencatat kekurangan barang secara diam-diam.',
+            D: 'Meminta bagian yang lebih besar agar dokumen bisa ditandatangani.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'C', 'D'],
+          analysis: 'Menguji integritas anti-suap (anti-bribery compliance) dan perlindungan aset perusahaan di pelabuhan.'
+        },
+        {
+          no: 10,
+          dimension: 'Integritas & Tata Kelola',
+          dimKey: 'dim4',
+          question: 'Anda menemukan ketidaksesuaian stok suku cadang (spare parts) atau konsumsi bunker yang dicatat oleh perwira pendahulu Anda saat serah terima jabatan (handover). Apa tindakan Anda?',
+          options: {
+            A: 'Menandatangani berita acara handover begitu saja agar proses serah terima cepat selesai.',
+            B: 'Melakukan verifikasi fisik bersama, mencatat selisih aktual secara transparan dalam Handover Report, dan melaporkannya ke kantor sebelum mengambil alih tanggung jawab.',
+            C: 'Menutupi selisih tersebut secara bertahap dari laporan bulanan berikutnya.',
+            D: 'Menyalahkan perwira lama di depan seluruh kru tanpa bukti pencatatan yang rapi.'
+          },
+          weights: { A: 1, B: 4, C: 1, D: 1 },
+          ideal: 'B',
+          redFlags: ['A', 'C', 'D'],
+          analysis: 'Menilai akuntabilitas tata kelola inventaris/bunker dan transparansi profesional saat proses serah terima jabatan.'
+        }
+      ]
+    };
+
+    // =========================================================================
+    // 2. STATE APLIKASI & DATA CONTOH REALISTIS (DUMMY DATA)
+    // =========================================================================
+    const STORAGE_KEY = 'pt_sosm_crew_evaluations_v1';
+
+    const DEFAULT_CANDIDATES = [
+      {
+        id: 'SOSM-2026-001',
+        name: 'Capt. Hendra Wijaya, M.Mar',
+        seamanBook: 'G 884210',
+        rank: 'Chief Officer',
+        category: 'Officers',
+        date: '2026-11-20',
+        examiner: 'Marine HR - PT SOSM',
+        answers: { 1: 'B', 2: 'C', 3: 'B', 4: 'B', 5: 'B', 6: 'B', 7: 'B', 8: 'A', 9: 'B', 10: 'B' },
+        oralNotes: {
+          q1: 'Menjelaskan penanganan cuaca buruk di Laut Cina Selatan dengan prosedur heavy weather checklist dan lashing kontainer secara sistematis.',
+          q2: 'Terbiasa berlayar dengan kru campuran (Filipina, India, Ukraina); mengutamakan komunikasi terbuka dan saling menghormati jam istirahat.',
+          q3: 'Berkomitmen penuh menyelesaikan kontrak 6+1 bulan hingga serah terima dengan reliever resmi.',
+          redFlagOverride: false
+        }
+      },
+      {
+        id: 'SOSM-2026-002',
+        name: 'Rizky Ramadhan',
+        seamanBook: 'F 519044',
+        rank: 'Able Seaman (AB)',
+        category: 'Ratings',
+        date: '2026-11-22',
+        examiner: 'Crewing Officer - PT SOSM',
+        answers: { 1: 'C', 2: 'B', 3: 'B', 4: 'A', 5: 'B', 6: 'C', 7: 'D', 8: 'D', 9: 'B', 10: 'C' },
+        oralNotes: {
+          q1: 'Pernah mengalami kerusakan winch saat sandar; tetap tenang mengikuti arahan Bosun dan Chief Officer.',
+          q2: 'Sempat agak canggung dengan rekan sekamar yang merokok di kabin, namun berhasil diselesaikan lewat kesepakatan jadwal.',
+          q3: 'Menyatakan akan menyelesaikan kontrak 9 bulan karena menjaga rekam jejak buku pelaut.',
+          redFlagOverride: false
+        }
+      },
+      {
+        id: 'SOSM-2026-003',
+        name: 'Dedi Kurniawan',
+        seamanBook: 'E 302918',
+        rank: 'Oiler',
+        category: 'Ratings',
+        date: '2026-11-23',
+        examiner: 'Crewing Officer - PT SOSM',
+        answers: { 1: 'A', 2: 'B', 3: 'A', 4: 'C', 5: 'B', 6: 'B', 7: 'C', 8: 'A', 9: 'B', 10: 'C' },
+        oralNotes: {
+          q1: 'Cenderung mengutamakan kecepatan kerja dibanding prosedur izin kerja saat didesak senior.',
+          q2: 'Cukup adaptif dengan kru berbagai daerah.',
+          q3: 'Bersedia menyelesaikan kontrak.',
+          redFlagOverride: false
+        }
+      }
+    ];
+
+    let candidates = [];
+    let currentCategory = 'Ratings';
+    let currentAnswers = {};
+    let dimensionChartInstance = null;
+    let statusChartInstance = null;
+    let dimensionChartType = 'bar';
+
+    // =========================================================================
+    // 3. KALKULATOR SKOR & ATURAN RED FLAG (INTI LOGIKA EXCEL PT SOSM)
+    // =========================================================================
+    function evaluateCandidateRecord(category, answers, oralRedFlag = false) {
+      const questions = INSTRUMENT_DATA[category];
+      let totalScore = 0;
+      let answeredCount = 0;
+
+      const dimScores = {
+        dim1: { score: 0, max: 12 }, // Safety & Prosedur / Komando (No 1-3)
+        dim2: { score: 0, max: 8 },  // Ketahanan Mental (No 4-5)
+        dim3: { score: 0, max: 12 }, // Kerja Sama & Budaya / Kepemimpinan (No 6-8)
+        dim4: { score: 0, max: 8 }   // Integritas & Komitmen / Tata Kelola (No 9-10)
+      };
+
+      const redFlagItems = [];
+      let hasSafetyRedFlag = false;
+
+      questions.forEach((q) => {
+        const chosen = answers[q.no];
+        if (chosen && q.weights[chosen] !== undefined) {
+          answeredCount++;
+          const pts = q.weights[chosen];
+          totalScore += pts;
+          dimScores[q.dimKey].score += pts;
+
+          if (pts === 1) {
+            redFlagItems.push({
+              no: q.no,
+              dimension: q.dimension,
+              chosen: chosen,
+              optionText: q.options[chosen]
+            });
+            if (q.dimKey === 'dim1') {
+              hasSafetyRedFlag = true;
+            }
+          }
+        }
+      });
+
+      if (oralRedFlag) {
+        redFlagItems.push({
+          no: 'Wawancara',
+          dimension: 'Validasi Lisan HR',
+          chosen: 'FLAG',
+          optionText: 'Terdeteksi Red Flag saat wawancara validasi lisan oleh penguji.'
+        });
+      }
+
+      const percentage = Math.round((totalScore / 40) * 100);
+      const totalRedFlags = redFlagItems.length;
+
+      // Penentuan Status Kelayakan sesuai Aturan Excel PT SOSM
+      let status = 'BELUM LENGKAP';
+      let statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-300';
+      let statusDescription = 'Lengkapi seluruh 10 soal untuk mendapatkan klasifikasi kelayakan otomatis.';
+
+      if (answeredCount === 10) {
+        if (totalScore < 24 || totalRedFlags >= 1) {
+          status = 'TIDAK DIREKOMENDASIKAN';
+          statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+          statusDescription = totalRedFlags >= 1
+            ? `Gugur otomatis karena terdeteksi ${totalRedFlags} indikator Red Flag (bobot 1 poin / pelanggaran prinsip keselamatan/integritas).`
+            : 'Total skor di bawah ambang batas minimal kelulusan (<24 poin / <60%).';
+        } else if (totalScore >= 32 && totalRedFlags === 0) {
+          status = 'DIREKOMENDASIKAN';
+          statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+          statusDescription = 'Lolos tahap psikologi & karakter (≥80% & 0 Red Flag). Siap lanjut ke wawancara user/principal.';
+        } else if (totalScore >= 24 && totalScore <= 31 && !hasSafetyRedFlag && totalRedFlags === 0) {
+          status = 'PERLU PENDALAMAN';
+          statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+          statusDescription = 'Skor moderat (60–79%) tanpa Red Flag Safety. Wajib divalidasi melalui 3 pertanyaan wawancara lisan.';
+        } else {
+          status = 'TIDAK DIREKOMENDASIKAN';
+          statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+          statusDescription = 'Tidak memenuhi kriteria kelulusan standar keselamatan pelayaran.';
+        }
+      }
+
+      return {
+        totalScore,
+        percentage,
+        answeredCount,
+        dimScores,
+        redFlagItems,
+        totalRedFlags,
+        hasSafetyRedFlag,
+        status,
+        statusBadgeClass,
+        statusDescription
+      };
+    }
+
+    // =========================================================================
+    // 4. PENYIMPANAN & INISIALISASI DATA
+    // =========================================================================
+    function loadCandidates() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            candidates = parsed;
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Gagal membaca localStorage:', e);
+      }
+      candidates = JSON.parse(JSON.stringify(DEFAULT_CANDIDATES));
+      saveCandidatesToStorage();
+    }
+
+    function saveCandidatesToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(candidates));
+      } catch (e) {
+        console.error('Gagal menyimpan ke localStorage:', e);
+      }
+    }
+
+    function confirmResetDummy() {
+      showConfirmModal(
+        'Reset Data Contoh',
+        'Seluruh data kandidat saat ini akan dikembalikan ke 3 data contoh bawaan PT SOSM. Lanjutkan?',
+        () => {
+          candidates = JSON.parse(JSON.stringify(DEFAULT_CANDIDATES));
+          saveCandidatesToStorage();
+          renderDashboard();
+          showToast('Data contoh berhasil dipulihkan.', 'success');
+        }
+      );
+    }
+
+    function deleteCandidate(id) {
+      const target = candidates.find(c => c.id === id);
+      if (!target) return;
+      showConfirmModal(
+        'Hapus Data Kandidat',
+        `Hapus hasil evaluasi atas nama "${target.name}" (${target.rank}) dari sistem?`,
+        () => {
+          candidates = candidates.filter(c => c.id !== id);
+          saveCandidatesToStorage();
+          renderDashboard();
+          showToast('Data kandidat berhasil dihapus.', 'info');
+        }
+      );
+    }
+
+    // =========================================================================
+    // 5. NAVIGASI TAB & MODE TAMPILAN
+    // =========================================================================
+    function switchTab(tabName) {
+      const tabs = ['dashboard', 'assessment', 'guide'];
+      const titles = {
+        dashboard: {
+          title: 'Dashboard & Rekap Evaluasi Kru Kapal',
+          sub: 'Monitoring skor psikologi, profil kompetensi dimensi, dan deteksi Red Flag kandidat pelaut.'
+        },
+        assessment: {
+          title: 'Simulasi & Input Tes Psikologi Kandidat',
+          sub: 'Instrumen evaluasi situasional (Ratings & Officers) serta lembar validasi wawancara lisan.'
+        },
+        guide: {
+          title: 'Kunci Jawaban, Matriks Red Flag & Panduan Interpretasi',
+          sub: 'Standar pembobotan nilai (4 / 2 / 1) dan kriteria keputusan kelayakan PT Seven Ocean Ship Management.'
+        }
+      };
+
+      tabs.forEach((t) => {
+        const sectionEl = document.getElementById(`tab-${t}`);
+        const navEl = document.getElementById(`nav-${t}`);
+        if (t === tabName) {
+          sectionEl.classList.remove('hidden');
+          navEl.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold bg-sky-600 text-white shadow-md shadow-sky-900/40 transition text-left';
+        } else {
+          sectionEl.classList.add('hidden');
+          navEl.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800/80 hover:text-white transition text-left';
+        }
+      });
+
+      document.getElementById('page-title').textContent = titles[tabName].title;
+      document.getElementById('page-subtitle').textContent = titles[tabName].sub;
+
+      // Tutup mobile menu otomatis setelah memilih tab
+      const sidebarNav = document.getElementById('sidebar-nav');
+      if (window.innerWidth < 1024) {
+        sidebarNav.classList.add('hidden');
+      }
+
+      if (tabName === 'dashboard') {
+        renderDashboard();
+      } else if (tabName === 'guide') {
+        renderGuideTable('Ratings');
+      }
+    }
+
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+      const nav = document.getElementById('sidebar-nav');
+      nav.classList.toggle('hidden');
+      nav.classList.toggle('flex');
+    });
+
+    function setAssessmentMode(mode) {
+      const previewCol = document.getElementById('live-preview-column');
+      const formCol = document.getElementById('assessment-form-column');
+      const oralCard = document.getElementById('oral-interview-card');
+      const btnExaminer = document.getElementById('mode-examiner-btn');
+      const btnCandidate = document.getElementById('mode-candidate-btn');
+
+      if (mode === 'candidate') {
+        previewCol.classList.add('hidden');
+        oralCard.classList.add('hidden');
+        formCol.classList.remove('lg:col-span-8');
+        formCol.classList.add('lg:col-span-12');
+        btnCandidate.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition';
+        btnExaminer.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+        showToast('Mode Kandidat aktif: Panel skor & kunci tersembunyi.', 'info');
+      } else {
+        previewCol.classList.remove('hidden');
+        oralCard.classList.remove('hidden');
+        formCol.classList.remove('lg:col-span-12');
+        formCol.classList.add('lg:col-span-8');
+        btnExaminer.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition';
+        btnCandidate.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+        showToast('Mode Penguji / HR aktif: Live Score & Wawancara ditampilkan.', 'info');
+      }
+    }
+
+    // =========================================================================
+    // 6. RENDER FORMULIR TES & LIVE PREVIEW (TAB 2)
+    // =========================================================================
+    function selectAssessmentCategory(category) {
+      currentCategory = category;
+      currentAnswers = {};
+
+      const btnR = document.getElementById('cat-btn-ratings');
+      const btnO = document.getElementById('cat-btn-officers');
+
+      if (category === 'Ratings') {
+        btnR.className = 'py-2.5 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-navy-900 font-bold text-xs sm:text-sm text-center transition';
+        btnO.className = 'py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 font-semibold text-xs sm:text-sm text-center transition';
+        document.getElementById('questions-section-title').textContent = 'Paket Soal Kategori: Ratings (10 Pertanyaan)';
+        document.getElementById('preview-cat-badge').textContent = 'Ratings';
+        document.getElementById('dim1-label').textContent = '1. Safety & Prosedur';
+        document.getElementById('dim3-label').textContent = '3. Kerja Sama & Budaya';
+        document.getElementById('dim4-label').textContent = '4. Integritas & Komitmen';
+      } else {
+        btnO.className = 'py-2.5 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-navy-900 font-bold text-xs sm:text-sm text-center transition';
+        btnR.className = 'py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 font-semibold text-xs sm:text-sm text-center transition';
+        document.getElementById('questions-section-title').textContent = 'Paket Soal Kategori: Officers (10 Pertanyaan)';
+        document.getElementById('preview-cat-badge').textContent = 'Officers';
+        document.getElementById('dim1-label').textContent = '1. Safety & Komando';
+        document.getElementById('dim3-label').textContent = '3. Kepemimpinan & Tim';
+        document.getElementById('dim4-label').textContent = '4. Integritas & Tata Kelola';
+      }
+
+      renderQuestionsList();
+      updateLivePreview();
+    }
+
+    function renderQuestionsList() {
+      const container = document.getElementById('questions-container');
+      const questions = INSTRUMENT_DATA[currentCategory];
+
+      container.innerHTML = questions.map((q) => {
+        const optionKeys = ['A', 'B', 'C', 'D'];
+        const optionsHtml = optionKeys.map((key) => {
+          const isChecked = currentAnswers[q.no] === key ? 'checked' : '';
+          return `
+            <label class="radio-card flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-sky-400 cursor-pointer transition bg-white">
+              <input type="radio" name="question_${q.no}" value="${key}" ${isChecked} onchange="handleAnswerSelect(${q.no}, '${key}')" class="mt-1 w-4 h-4 text-sky-600 border-slate-300 focus:ring-sky-500 shrink-0" />
+              <div class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                <span class="font-bold text-navy-900 mr-1">${key}.</span> ${q.options[key]}
+              </div>
+            </label>
+          `;
+        }).join('');
+
+        return `
+          <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-navy-900 text-white">
+                Soal #${q.no}
+              </span>
+              <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800">
+                Dimensi: ${q.dimension}
+              </span>
+            </div>
+            <p class="text-sm font-semibold text-slate-900 leading-relaxed">${q.question}</p>
+            <div class="grid grid-cols-1 gap-2.5 pt-1">
+              ${optionsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleAnswerSelect(questionNo, optionKey) {
+      currentAnswers[questionNo] = optionKey;
+      updateLivePreview();
+    }
+
+    function updateLivePreview() {
+      const oralRedFlag = document.getElementById('oral-redflag').checked;
+      const evalResult = evaluateCandidateRecord(currentCategory, currentAnswers, oralRedFlag);
+
+      document.getElementById('answered-counter').textContent = `Terjawab: ${evalResult.answeredCount} / 10`;
+      document.getElementById('preview-total-score').textContent = evalResult.totalScore;
+      document.getElementById('preview-percentage').textContent = `${evalResult.percentage}% (${evalResult.answeredCount} dari 10 soal terjawab)`;
+
+      // Update Dimensi Bars
+      document.getElementById('dim1-val').textContent = `${evalResult.dimScores.dim1.score} / 12`;
+      document.getElementById('dim1-bar').style.width = `${(evalResult.dimScores.dim1.score / 12) * 100}%`;
+
+      document.getElementById('dim2-val').textContent = `${evalResult.dimScores.dim2.score} / 8`;
+      document.getElementById('dim2-bar').style.width = `${(evalResult.dimScores.dim2.score / 8) * 100}%`;
+
+      document.getElementById('dim3-val').textContent = `${evalResult.dimScores.dim3.score} / 12`;
+      document.getElementById('dim3-bar').style.width = `${(evalResult.dimScores.dim3.score / 12) * 100}%`;
+
+      document.getElementById('dim4-val').textContent = `${evalResult.dimScores.dim4.score} / 8`;
+      document.getElementById('dim4-bar').style.width = `${(evalResult.dimScores.dim4.score / 8) * 100}%`;
+
+      // Update Status Box
+      const statusBox = document.getElementById('preview-status-box');
+      const statusText = document.getElementById('preview-status-text');
+      const statusDesc = document.getElementById('preview-status-desc');
+
+      statusText.textContent = evalResult.status;
+      statusDesc.textContent = evalResult.statusDescription;
+
+      if (evalResult.status === 'DIREKOMENDASIKAN') {
+        statusBox.className = 'p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 mb-4';
+        statusText.className = 'text-sm font-extrabold text-emerald-700 mt-0.5';
+      } else if (evalResult.status === 'PERLU PENDALAMAN') {
+        statusBox.className = 'p-3.5 rounded-xl bg-amber-50 border border-amber-200 mb-4';
+        statusText.className = 'text-sm font-extrabold text-amber-700 mt-0.5';
+      } else if (evalResult.status === 'TIDAK DIREKOMENDASIKAN') {
+        statusBox.className = 'p-3.5 rounded-xl bg-rose-50 border border-rose-200 mb-4';
+        statusText.className = 'text-sm font-extrabold text-rose-700 mt-0.5';
+      } else {
+        statusBox.className = 'p-3.5 rounded-xl bg-slate-100 border border-slate-200 mb-4';
+        statusText.className = 'text-sm font-extrabold text-slate-700 mt-0.5';
+      }
+
+      // Update Red Flag List
+      const rfCountBadge = document.getElementById('preview-rf-count');
+      const rfListEl = document.getElementById('preview-rf-list');
+      rfCountBadge.textContent = evalResult.totalRedFlags;
+
+      if (evalResult.totalRedFlags > 0) {
+        rfCountBadge.className = 'px-2 py-0.5 text-xs font-extrabold rounded-full bg-rose-600 text-white';
+        rfListEl.innerHTML = evalResult.redFlagItems.map((rf) => `
+          <div class="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800">
+            <span class="font-bold">Soal #${rf.no} (${rf.dimension}) — Opsi ${rf.chosen}:</span>
+            <p class="text-[11px] mt-0.5 leading-snug">${rf.optionText}</p>
+          </div>
+        `).join('');
+      } else {
+        rfCountBadge.className = 'px-2 py-0.5 text-xs font-extrabold rounded-full bg-slate-100 text-slate-600';
+        rfListEl.innerHTML = '<p class="italic text-slate-500">Tidak ada indikator Red Flag terdeteksi.</p>';
+      }
+    }
+
+    function resetAssessmentForm() {
+      document.getElementById('cand-name').value = '';
+      document.getElementById('cand-seaman').value = '';
+      document.getElementById('cand-rank').value = '';
+      document.getElementById('cand-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('oral-q1').value = '';
+      document.getElementById('oral-q2').value = '';
+      document.getElementById('oral-q3').value = '';
+      document.getElementById('oral-redflag').checked = false;
+      currentAnswers = {};
+      renderQuestionsList();
+      updateLivePreview();
+    }
+
+    function saveCandidateEvaluation() {
+      const name = document.getElementById('cand-name').value.trim();
+      const seamanBook = document.getElementById('cand-seaman').value.trim();
+      const rank = document.getElementById('cand-rank').value.trim();
+      const date = document.getElementById('cand-date').value;
+      const examiner = document.getElementById('cand-examiner').value.trim() || 'Crewing Dept - PT SOSM';
+
+      if (!name || !seamanBook || !rank || !date) {
+        showToast('Mohon lengkapi Nama Lengkap, No. Buku Pelaut, Rank, dan Tanggal Tes.', 'error');
+        return;
+      }
+
+      const answeredCount = Object.keys(currentAnswers).length;
+      if (answeredCount < 10) {
+        showToast(`Masih ada ${10 - answeredCount} soal yang belum dijawab. Harap lengkapi semua 10 soal.`, 'error');
+        return;
+      }
+
+      const newRecord = {
+        id: 'SOSM-' + Date.now().toString().slice(-6),
+        name,
+        seamanBook,
+        rank,
+        category: currentCategory,
+        date,
+        examiner,
+        answers: { ...currentAnswers },
+        oralNotes: {
+          q1: document.getElementById('oral-q1').value.trim(),
+          q2: document.getElementById('oral-q2').value.trim(),
+          q3: document.getElementById('oral-q3').value.trim(),
+          redFlagOverride: document.getElementById('oral-redflag').checked
+        }
+      };
+
+      candidates.unshift(newRecord);
+      saveCandidatesToStorage();
+      resetAssessmentForm();
+      showToast(`Hasil tes ${name} (${rank}) berhasil disimpan ke Dashboard!`, 'success');
+      switchTab('dashboard');
+    }
+
+    // =========================================================================
+    // 7. RENDER DASHBOARD, GRAFIK & TABEL REKAPITULASI (TAB 1)
+    // =========================================================================
+    function renderDashboard() {
+      const searchQuery = (document.getElementById('filter-search').value || '').toLowerCase();
+      const catFilter = document.getElementById('filter-category').value;
+      const statusFilter = document.getElementById('filter-status').value;
+
+      // Evaluasi seluruh kandidat
+      const evaluatedAll = candidates.map((c) => ({
+        ...c,
+        eval: evaluateCandidateRecord(c.category, c.answers, c.oralNotes?.redFlagOverride || false)
+      }));
+
+      // KPI Summary (berdasarkan seluruh data tersimpan)
+      const totalCount = evaluatedAll.length;
+      const ratingsCount = evaluatedAll.filter(c => c.category === 'Ratings').length;
+      const officersCount = evaluatedAll.filter(c => c.category === 'Officers').length;
+      const passCount = evaluatedAll.filter(c => c.eval.status === 'DIREKOMENDASIKAN').length;
+      const reviewCount = evaluatedAll.filter(c => c.eval.status === 'PERLU PENDALAMAN').length;
+      const failCount = evaluatedAll.filter(c => c.eval.status === 'TIDAK DIREKOMENDASIKAN').length;
+
+      document.getElementById('kpi-total').textContent = totalCount;
+      document.getElementById('kpi-total-sub').textContent = `${ratingsCount} Ratings • ${officersCount} Officers`;
+      document.getElementById('kpi-pass').textContent = passCount;
+      document.getElementById('kpi-review').textContent = reviewCount;
+      document.getElementById('kpi-fail').textContent = failCount;
+
+      // Filter untuk Tabel
+      const filteredList = evaluatedAll.filter((c) => {
+        const matchSearch =
+          c.name.toLowerCase().includes(searchQuery) ||
+          c.rank.toLowerCase().includes(searchQuery) ||
+          c.seamanBook.toLowerCase().includes(searchQuery);
+        const matchCat = catFilter === 'ALL' || c.category === catFilter;
+        const matchStatus = statusFilter === 'ALL' || c.eval.status === statusFilter;
+        return matchSearch && matchCat && matchStatus;
+      });
+
+      const tbody = document.getElementById('candidates-table-body');
+      if (filteredList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-10 px-4 text-center text-slate-500 text-sm">
+              Tidak ada data kandidat yang sesuai dengan filter pencarian.
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = filteredList.map((c) => {
+          const rfBadge = c.eval.totalRedFlags > 0
+            ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-100 text-rose-700 border border-rose-200">${c.eval.totalRedFlags} Flag</span>`
+            : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">0 Flag</span>`;
+
+          const catBadge = c.category === 'Officers'
+            ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded bg-navy-900 text-white">Officers</span>`
+            : `<span class="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">Ratings</span>`;
+
+          return `
+            <tr onclick="openCandidateDetail('${c.id}')" class="hover:bg-sky-50/60 cursor-pointer transition group">
+              <td class="py-3.5 px-4">
+                <div class="font-bold text-navy-900 group-hover:text-sky-700 transition">${c.name}</div>
+                <div class="text-xs text-slate-500">Seaman Book: <span class="font-mono font-medium text-slate-700">${c.seamanBook}</span></div>
+              </td>
+              <td class="py-3.5 px-4">
+                <div class="font-semibold text-slate-800">${c.rank}</div>
+                <div class="mt-0.5">${catBadge}</div>
+              </td>
+              <td class="py-3.5 px-4 text-xs text-slate-600">${c.date}</td>
+              <td class="py-3.5 px-4 text-center">
+                <span class="font-extrabold text-navy-900 text-base">${c.eval.totalScore}</span>
+                <span class="text-xs text-slate-400">/40</span>
+                <div class="text-[11px] font-semibold text-slate-500">${c.eval.percentage}%</div>
+              </td>
+              <td class="py-3.5 px-4 text-center">${rfBadge}</td>
+              <td class="py-3.5 px-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${c.eval.statusBadgeClass}">
+                  ${c.eval.status}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-right" onclick="event.stopPropagation()">
+                <div class="inline-flex items-center gap-1.5">
+                  <button onclick="openCandidateDetail('${c.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-100 text-navy-900 hover:text-sky-800 text-xs font-semibold transition" title="Lihat Detail">
+                    Detail
+                  </button>
+                  <button onclick="deleteCandidate('${c.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Hapus Data">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      updateCharts(evaluatedAll, passCount, reviewCount, failCount);
+    }
+
+    function setDimensionChartType(type) {
+      dimensionChartType = type;
+      const btnBar = document.getElementById('btn-chart-bar');
+      const btnRadar = document.getElementById('btn-chart-radar');
+
+      if (type === 'bar') {
+        btnBar.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-white text-navy-900 shadow-xs transition';
+        btnRadar.className = 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-navy-900 transition';
+      } else {
+        btnRadar.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-white text-navy-900 shadow-xs transition';
+        btnBar.className = 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-navy-900 transition';
+      }
+
+      renderDashboard();
+    }
+
+    function updateCharts(evaluatedAll, passCount, reviewCount, failCount) {
+      const count = evaluatedAll.length || 1;
+      const avgDim1 = +(evaluatedAll.reduce((acc, c) => acc + c.eval.dimScores.dim1.score, 0) / count).toFixed(1);
+      const avgDim2 = +(evaluatedAll.reduce((acc, c) => acc + c.eval.dimScores.dim2.score, 0) / count).toFixed(1);
+      const avgDim3 = +(evaluatedAll.reduce((acc, c) => acc + c.eval.dimScores.dim3.score, 0) / count).toFixed(1);
+      const avgDim4 = +(evaluatedAll.reduce((acc, c) => acc + c.eval.dimScores.dim4.score, 0) / count).toFixed(1);
+
+      const dimLabels = [
+        'Safety & Prosedur/Komando (Maks 12)',
+        'Ketahanan Mental (Maks 8)',
+        'Kerja Sama & Kepemimpinan (Maks 12)',
+        'Integritas & Komitmen (Maks 8)'
+      ];
+
+      // 1. Dimension Chart (Bar / Radar)
+      const ctxDim = document.getElementById('dimensionChart').getContext('2d');
+      if (dimensionChartInstance) {
+        dimensionChartInstance.destroy();
+      }
+
+      const isRadar = dimensionChartType === 'radar';
+      dimensionChartInstance = new Chart(ctxDim, {
+        type: dimensionChartType,
+        data: {
+          labels: isRadar
+            ? ['Safety (12)', 'Ketahanan Mental (8)', 'Kerja Sama/Lead (12)', 'Integritas (8)']
+            : dimLabels,
+          datasets: [
+            {
+              label: 'Rata-Rata Skor Kandidat',
+              data: evaluatedAll.length ? [avgDim1, avgDim2, avgDim3, avgDim4] : [0, 0, 0, 0],
+              backgroundColor: isRadar ? 'rgba(2, 132, 199, 0.25)' : 'rgba(2, 132, 199, 0.85)',
+              borderColor: '#0284c7',
+              borderWidth: 2,
+              borderRadius: isRadar ? 0 : 8,
+              pointBackgroundColor: '#0b1d3a'
+            },
+            {
+              label: 'Skor Maksimal Ideal',
+              data: [12, 8, 12, 8],
+              backgroundColor: isRadar ? 'rgba(148, 163, 184, 0.12)' : 'rgba(203, 213, 225, 0.6)',
+              borderColor: '#94a3b8',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              borderRadius: isRadar ? 0 : 8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: isRadar
+            ? {
+                r: {
+                  beginAtZero: true,
+                  max: 12,
+                  ticks: { stepSize: 4, font: { size: 10 } }
+                }
+              }
+            : {
+                y: {
+                  beginAtZero: true,
+                  max: 14,
+                  grid: { color: '#f1f5f9' }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { font: { size: 11 } }
+                }
+              },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 11 } }
+            }
+          }
+        }
+      });
+
+      // 2. Status Doughnut Chart
+      const ctxStatus = document.getElementById('statusChart').getContext('2d');
+      if (statusChartInstance) {
+        statusChartInstance.destroy();
+      }
+
+      const total = evaluatedAll.length;
+      statusChartInstance = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+          labels: ['Direkomendasikan', 'Perlu Pendalaman', 'Tidak Direkomendasikan'],
+          datasets: [{
+            data: total > 0 ? [passCount, reviewCount, failCount] : [1, 0, 0],
+            backgroundColor: total > 0 ? ['#10b981', '#f59e0b', '#f43f5e'] : ['#e2e8f0', '#e2e8f0', '#e2e8f0'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+
+      const pctPass = total ? Math.round((passCount / total) * 100) : 0;
+      const pctRev = total ? Math.round((reviewCount / total) * 100) : 0;
+      const pctFail = total ? Math.round((failCount / total) * 100) : 0;
+
+      document.getElementById('status-legend').innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-2 text-slate-700 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Direkomendasikan</span>
+          <span class="font-bold text-slate-900">${passCount} (${pctPass}%)</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-2 text-slate-700 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>Perlu Pendalaman</span>
+          <span class="font-bold text-slate-900">${reviewCount} (${pctRev}%)</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-2 text-slate-700 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Tidak Direkomendasikan</span>
+          <span class="font-bold text-slate-900">${failCount} (${pctFail}%)</span>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 8. MODAL DETAIL KANDIDAT & EXPORT CSV
+    // =========================================================================
+    function openCandidateDetail(id) {
+      const c = candidates.find(item => item.id === id);
+      if (!c) return;
+
+      const ev = evaluateCandidateRecord(c.category, c.answers, c.oralNotes?.redFlagOverride || false);
+      const questions = INSTRUMENT_DATA[c.category];
+
+      document.getElementById('detail-modal-name').textContent = `${c.name} — ${c.rank} (${c.category})`;
+
+      const rfSection = ev.totalRedFlags > 0
+        ? `
+          <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 space-y-2">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-rose-800">Peringatan Red Flag Terdeteksi (${ev.totalRedFlags})</h4>
+            ${ev.redFlagItems.map(rf => `
+              <div class="text-xs text-rose-900 bg-white/80 p-2.5 rounded-lg border border-rose-200">
+                <strong>Soal #${rf.no} (${rf.dimension}) — Pilihan ${rf.chosen}:</strong> ${rf.optionText}
+              </div>
+            `).join('')}
+          </div>
+        `
+        : `
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
+            ✓ Bersih dari indikator Red Flag (Tidak ada jawaban bernilai 1 poin).
+          </div>
+        `;
+
+      const answerBreakdown = questions.map((q) => {
+        const chosen = c.answers[q.no];
+        const pts = q.weights[chosen];
+        const badgeColor = pts === 4
+          ? 'bg-emerald-100 text-emerald-800'
+          : pts === 2
+            ? 'bg-amber-100 text-amber-800'
+            : 'bg-rose-100 text-rose-800 font-extrabold';
+        return `
+          <tr class="border-b border-slate-100 text-xs">
+            <td class="py-2 px-3 font-bold text-slate-700">#${q.no}</td>
+            <td class="py-2 px-3 text-slate-600">${q.dimension}</td>
+            <td class="py-2 px-3 font-bold text-navy-900">${chosen} <span class="font-normal text-slate-500">(Ideal: ${q.ideal})</span></td>
+            <td class="py-2 px-3 text-right"><span class="px-2 py-0.5 rounded font-bold ${badgeColor}">${pts} Poin</span></td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('detail-modal-body').innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <div><span class="text-slate-500 block">No. Buku Pelaut</span><strong class="text-slate-900 font-mono">${c.seamanBook}</strong></div>
+          <div><span class="text-slate-500 block">Tanggal Tes</span><strong class="text-slate-900">${c.date}</strong></div>
+          <div><span class="text-slate-500 block">Penguji</span><strong class="text-slate-900">${c.examiner}</strong></div>
+          <div><span class="text-slate-500 block">Total Skor</span><strong class="text-navy-900 text-sm">${ev.totalScore} / 40 (${ev.percentage}%)</strong></div>
+        </div>
+
+        <div class="p-4 rounded-xl border ${ev.statusBadgeClass}">
+          <div class="text-xs font-bold uppercase tracking-wider">Keputusan Rekomendasi Sistem</div>
+          <div class="text-base font-extrabold mt-0.5">${ev.status}</div>
+          <p class="text-xs mt-1">${ev.statusDescription}</p>
+        </div>
+
+        ${rfSection}
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="p-3 rounded-xl bg-white border border-slate-200">
+            <span class="text-slate-500 block">${c.category === 'Ratings' ? 'Safety & Prosedur' : 'Safety & Komando'}</span>
+            <strong class="text-base text-navy-900">${ev.dimScores.dim1.score} / 12</strong>
+          </div>
+          <div class="p-3 rounded-xl bg-white border border-slate-200">
+            <span class="text-slate-500 block">Ketahanan Mental</span>
+            <strong class="text-base text-navy-900">${ev.dimScores.dim2.score} / 8</strong>
+          </div>
+          <div class="p-3 rounded-xl bg-white border border-slate-200">
+            <span class="text-slate-500 block">${c.category === 'Ratings' ? 'Kerja Sama & Budaya' : 'Kepemimpinan & Tim'}</span>
+            <strong class="text-base text-navy-900">${ev.dimScores.dim3.score} / 12</strong>
+          </div>
+          <div class="p-3 rounded-xl bg-white border border-slate-200">
+            <span class="text-slate-500 block">${c.category === 'Ratings' ? 'Integritas & Komitmen' : 'Integritas & Tata Kelola'}</span>
+            <strong class="text-base text-navy-900">${ev.dimScores.dim4.score} / 8</strong>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-navy-900">Catatan Wawancara Validasi Lisan</h4>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs text-slate-700">
+            <p><strong>1. Kejujuran & Stres:</strong> ${c.oralNotes?.q1 || '<span class="italic text-slate-400">Tidak ada catatan</span>'}</p>
+            <p><strong>2. Toleransi Ruang Hidup:</strong> ${c.oralNotes?.q2 || '<span class="italic text-slate-400">Tidak ada catatan</span>'}</p>
+            <p><strong>3. Komitmen Kontrak:</strong> ${c.oralNotes?.q3 || '<span class="italic text-slate-400">Tidak ada catatan</span>'}</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-navy-900 mb-2">Rincian Jawaban Per Nomor</h4>
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase">
+                <tr>
+                  <th class="py-2 px-3">No</th>
+                  <th class="py-2 px-3">Dimensi</th>
+                  <th class="py-2 px-3">Jawaban</th>
+                  <th class="py-2 px-3 text-right">Skor</th>
+                </tr>
+              </thead>
+              <tbody>${answerBreakdown}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      const modal = document.getElementById('detail-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDetailModal() {
+      const modal = document.getElementById('detail-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function exportToCSV() {
+      if (candidates.length === 0) {
+        showToast('Tidak ada data kandidat untuk diekspor.', 'error');
+        return;
+      }
+
+      const headers = [
+        'ID', 'Nama Lengkap', 'No Buku Pelaut', 'Rank', 'Kategori', 'Tanggal Tes',
+        'Skor Safety (12)', 'Skor Mental (8)', 'Skor Kerja Sama/Lead (12)', 'Skor Integritas (8)',
+        'Total Skor (40)', 'Persentase', 'Jumlah Red Flag', 'Status Kelayakan', 'Penguji'
+      ];
+
+      const rows = candidates.map((c) => {
+        const ev = evaluateCandidateRecord(c.category, c.answers, c.oralNotes?.redFlagOverride || false);
+        return [
+          c.id,
+          `"${c.name.replace(/"/g, '""')}"`,
+          `"${c.seamanBook}"`,
+          `"${c.rank}"`,
+          c.category,
+          c.date,
+          ev.dimScores.dim1.score,
+          ev.dimScores.dim2.score,
+          ev.dimScores.dim3.score,
+          ev.dimScores.dim4.score,
+          ev.totalScore,
+          `${ev.percentage}%`,
+          ev.totalRedFlags,
+          `"${ev.status}"`,
+          `"${c.examiner}"`
+        ].join(',');
+      });
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Rekap_Psikologi_Kru_PT_SOSM_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('File CSV rekapitulasi berhasil diunduh.', 'success');
+    }
+
+    // =========================================================================
+    // 9. TAB 3: MATRIKS KUNCI JAWABAN & RED FLAG
+    // =========================================================================
+    function renderGuideTable(category) {
+      const btnR = document.getElementById('guide-tab-ratings');
+      const btnO = document.getElementById('guide-tab-officers');
+
+      if (category === 'Ratings') {
+        btnR.className = 'px-4 py-1.5 rounded-lg text-xs font-bold bg-navy-900 text-white shadow-xs transition';
+        btnO.className = 'px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-navy-900 transition';
+      } else {
+        btnO.className = 'px-4 py-1.5 rounded-lg text-xs font-bold bg-navy-900 text-white shadow-xs transition';
+        btnR.className = 'px-4 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-navy-900 transition';
+      }
+
+      const list = INSTRUMENT_DATA[category];
+      const tbody = document.getElementById('guide-table-body');
+
+      tbody.innerHTML = list.map((item) => {
+        const weightStr = ['A', 'B', 'C', 'D'].map((opt) => {
+          const w = item.weights[opt];
+          if (w === 4) return `<span class="font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">4</span>`;
+          if (w === 1) return `<span class="font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">1</span>`;
+          return `<span class="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">2</span>`;
+        }).join(' / ');
+
+        return `
+          <tr class="hover:bg-slate-50/80 align-top">
+            <td class="py-3.5 px-4 text-center font-bold text-navy-900">${item.no}</td>
+            <td class="py-3.5 px-4">
+              <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                ${item.dimension}
+              </span>
+            </td>
+            <td class="py-3.5 px-4 space-y-1.5">
+              <p class="text-slate-800 font-medium leading-relaxed">${item.question}</p>
+              <div class="p-2 rounded-lg bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs">
+                <strong>Kunci Ideal (${item.ideal} — 4 Poin):</strong> ${item.options[item.ideal]}
+              </div>
+            </td>
+            <td class="py-3.5 px-4 text-center whitespace-nowrap font-mono text-xs">${weightStr}</td>
+            <td class="py-3.5 px-4 text-center">
+              <span class="inline-block px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 font-extrabold text-xs">
+                Opsi ${item.redFlags.join(', ')}
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-slate-600 text-xs leading-relaxed">${item.analysis}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 10. CUSTOM TOAST & CONFIRM MODAL UTILITIES
+    // =========================================================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-600 text-white border-emerald-500',
+        error: 'bg-rose-600 text-white border-rose-500',
+        info: 'bg-navy-900 text-white border-navy-700'
+      };
+      toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-xl border text-xs sm:text-sm font-medium flex items-center justify-between gap-3 transition-all duration-300 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function showConfirmModal(title, message, onConfirm) {
+      const modal = document.getElementById('confirm-modal');
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
+
+      document.getElementById('confirm-cancel').onclick = cleanup;
+      document.getElementById('confirm-ok').onclick = () => {
+        cleanup();
+        onConfirm();
+      };
+    }
+
+    // =========================================================================
+    // 11. BOOTSTRAP APLIKASI SAAT HALAMAN DIMUAT
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadCandidates();
+      document.getElementById('cand-date').value = new Date().toISOString().split('T')[0];
+      selectAssessmentCategory('Ratings');
+      renderDashboard();
+      renderGuideTable('Ratings');
+    });
+  </script>
+</body>
+</html>
