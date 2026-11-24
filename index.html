@@ -9,6 +9,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js untuk visualisasi analitik dimensi & status kelayakan -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Supabase JS Client untuk Sinkronisasi Cloud Real-time -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -126,9 +128,12 @@
             <img src="LOGO PT SOSM.jpeg" alt="Logo PT SOSM" class="w-full h-full object-contain rounded-lg" onerror="this.src='logo.jpeg'" />
           </div>
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <span class="font-extrabold tracking-tight text-lg text-white">PT SOSM</span>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">CREWING</span>
+              <span id="cloud-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>CONNECTING...
+              </span>
             </div>
             <p class="text-xs text-slate-400 leading-tight mt-0.5">Seven Ocean Ship Management</p>
           </div>
@@ -1019,9 +1024,37 @@
     };
 
     // =========================================================================
-    // 2. STATE APLIKASI & DATA CONTOH REALISTIS (DUMMY DATA)
+    // 2. STATE APLIKASI & DATABASE CLOUD SUPABASE
     // =========================================================================
     const STORAGE_KEY = 'pt_sosm_crew_evaluations_v1';
+    const SUPABASE_URL = 'https://idvvbcrffnaemmbanhlo.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_XstBHs8BjHRIbMG_KFP9Bg_jhcmZs7O';
+    let supabaseClient = null;
+    try {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch (e) {
+      console.warn('Inisialisasi Supabase gagal:', e);
+    }
+
+    function updateCloudStatus(status, label) {
+      const pill = document.getElementById('cloud-status-pill');
+      if (!pill) return;
+      if (status === 'connected') {
+        pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5';
+        pill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>' + (label || 'CLOUD ONLINE');
+      } else if (status === 'syncing') {
+        pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1.5';
+        pill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>' + (label || 'SINKRONISASI...');
+      } else if (status === 'warning') {
+        pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5';
+        pill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>' + (label || 'CLOUD PERLU IZIN SQL');
+      } else {
+        pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/30 flex items-center gap-1.5';
+        pill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>' + (label || 'LOKAL');
+      }
+    }
 
     const DEFAULT_CANDIDATES = [
       {
@@ -1175,23 +1208,87 @@
     }
 
     // =========================================================================
-    // 4. PENYIMPANAN & INISIALISASI DATA
+    // 4. PENYIMPANAN DATA (SUPABASE CLOUD & LOCAL STORAGE FALLBACK)
     // =========================================================================
-    function loadCandidates() {
+    async function loadCandidates() {
+      // 1. Muat dari localStorage terlebih dahulu agar instan (offline fallback)
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             candidates = parsed;
-            return;
+            renderDashboard();
           }
         }
       } catch (e) {
         console.error('Gagal membaca localStorage:', e);
       }
-      candidates = JSON.parse(JSON.stringify(DEFAULT_CANDIDATES));
-      saveCandidatesToStorage();
+
+      if (!candidates || candidates.length === 0) {
+        candidates = JSON.parse(JSON.stringify(DEFAULT_CANDIDATES));
+        renderDashboard();
+      }
+
+      // 2. Tarik data terbaru dari Supabase Cloud
+      if (supabaseClient) {
+        updateCloudStatus('syncing', 'Menghubungkan ke Cloud...');
+        try {
+          const { data, error } = await supabaseClient
+            .from('candidates')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.warn('Supabase fetch notice:', error.message);
+            updateCloudStatus('warning', 'Cloud Perlu Izin SQL');
+          } else if (data && data.length > 0) {
+            candidates = data.map((item) => ({
+              id: item.id,
+              name: item.name,
+              seamanBook: item.seaman_book || item.seamanBook || '',
+              rank: item.rank || '',
+              category: item.category || 'Ratings',
+              date: item.date || '',
+              examiner: item.examiner || 'Crewing Dept - PT SOSM',
+              answers: item.answers || {},
+              oralNotes: item.oral_notes || item.oralNotes || { q1: '', q2: '', q3: '', redFlagOverride: false }
+            }));
+            saveCandidatesToStorage();
+            renderDashboard();
+            updateCloudStatus('connected', 'Cloud Online (Real-time)');
+          } else {
+            // Jika database cloud masih kosong, seed data default
+            updateCloudStatus('connected', 'Cloud Online (Aktif)');
+            uploadDefaultCandidatesToCloud();
+          }
+        } catch (err) {
+          console.error('Koneksi Supabase error:', err);
+          updateCloudStatus('offline', 'Mode Offline (Lokal)');
+        }
+      } else {
+        updateCloudStatus('offline', 'Mode Offline (Lokal)');
+      }
+    }
+
+    async function uploadDefaultCandidatesToCloud() {
+      if (!supabaseClient) return;
+      try {
+        const rows = DEFAULT_CANDIDATES.map((c) => ({
+          id: c.id,
+          name: c.name,
+          seaman_book: c.seamanBook,
+          rank: c.rank,
+          category: c.category,
+          date: c.date,
+          examiner: c.examiner,
+          answers: c.answers,
+          oral_notes: c.oralNotes
+        }));
+        await supabaseClient.from('candidates').upsert(rows);
+      } catch (e) {
+        console.warn('Gagal unggah data contoh ke cloud:', e);
+      }
     }
 
     function saveCandidatesToStorage() {
@@ -1205,12 +1302,21 @@
     function confirmResetDummy() {
       showConfirmModal(
         'Reset Data Contoh',
-        'Seluruh data kandidat saat ini akan dikembalikan ke 3 data contoh bawaan PT SOSM. Lanjutkan?',
-        () => {
+        'Seluruh data kandidat saat ini akan dikembalikan ke data contoh bawaan PT SOSM. Lanjutkan?',
+        async () => {
           candidates = JSON.parse(JSON.stringify(DEFAULT_CANDIDATES));
           saveCandidatesToStorage();
           renderDashboard();
           showToast('Data contoh berhasil dipulihkan.', 'success');
+
+          if (supabaseClient) {
+            try {
+              await supabaseClient.from('candidates').delete().neq('id', 'NONE');
+              uploadDefaultCandidatesToCloud();
+            } catch (e) {
+              console.warn('Gagal reset di cloud:', e);
+            }
+          }
         }
       );
     }
@@ -1221,13 +1327,37 @@
       showConfirmModal(
         'Hapus Data Kandidat',
         `Hapus hasil evaluasi atas nama "${target.name}" (${target.rank}) dari sistem?`,
-        () => {
+        async () => {
           candidates = candidates.filter(c => c.id !== id);
           saveCandidatesToStorage();
           renderDashboard();
           showToast('Data kandidat berhasil dihapus.', 'info');
+
+          if (supabaseClient) {
+            try {
+              const { error } = await supabaseClient.from('candidates').delete().eq('id', id);
+              if (error) console.error('Gagal hapus dari Supabase:', error);
+            } catch (err) {
+              console.error('Error delete cloud:', err);
+            }
+          }
         }
       );
+    }
+
+    function subscribeToRealtime() {
+      if (!supabaseClient) return;
+      try {
+        supabaseClient
+          .channel('public-candidates-channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates' }, (payload) => {
+            console.log('Realtime update terdeteksi:', payload);
+            loadCandidates();
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime subscription error:', e);
+      }
     }
 
     // =========================================================================
@@ -1498,8 +1628,34 @@
       candidates.unshift(newRecord);
       saveCandidatesToStorage();
       resetAssessmentForm();
-      showToast(`Hasil tes ${name} (${rank}) berhasil disimpan ke Dashboard!`, 'success');
+      showToast(`Hasil tes ${name} (${rank}) berhasil disimpan!`, 'success');
       switchTab('dashboard');
+
+      // Sinkronisasi ke Supabase Cloud
+      if (supabaseClient) {
+        supabaseClient
+          .from('candidates')
+          .insert([{
+            id: newRecord.id,
+            name: newRecord.name,
+            seaman_book: newRecord.seamanBook,
+            rank: newRecord.rank,
+            category: newRecord.category,
+            date: newRecord.date,
+            examiner: newRecord.examiner,
+            answers: newRecord.answers,
+            oral_notes: newRecord.oralNotes
+          }])
+          .then(({ error }) => {
+            if (error) {
+              console.warn('Gagal sinkron ke Supabase Cloud:', error);
+              showToast('Data tersimpan lokal. (Catatan: Perlu eksekusi izin SQL di Supabase)', 'info');
+            } else {
+              showToast('Data berhasil disinkronkan ke Database Cloud!', 'success');
+            }
+          })
+          .catch((err) => console.error('Supabase insert error:', err));
+      }
     }
 
     // =========================================================================
@@ -2011,6 +2167,7 @@
     // =========================================================================
     window.addEventListener('DOMContentLoaded', () => {
       loadCandidates();
+      subscribeToRealtime();
       document.getElementById('cand-date').value = new Date().toISOString().split('T')[0];
       selectAssessmentCategory('Ratings');
       renderDashboard();
